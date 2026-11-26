@@ -6,7 +6,7 @@ export default function RegistroPage() {
   return (
     <AuthShell
       title="Creá tu cuenta"
-      description="Registrate con tu email y una contraseña para empezar a usar Minta."
+      description="Solo necesitás un email y una contraseña de al menos 8 caracteres."
       footer={
         <>
           ¿Ya tenés una cuenta?{" "}

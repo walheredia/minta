@@ -11,7 +11,8 @@ Run against every screenshot in the matrix (390px / 1440px × light / dark). **H
 - [ ] Only semantic tokens used — no hard-coded colors or arbitrary pixel values in the diff.
 - [ ] All states exist and were seen: loading, empty, error, success (where the screen has them).
 - [ ] Amounts use `formatAmount` + `tabular-nums`; ARS and USD never combined.
-- [ ] Copy in rioplatense voseo, glossary terms ("Gasto", "Hogar").
+- [ ] Copy follows DESIGN.md "Voice & copy": voseo, glossary terms ("Gasto", "Hogar"), no claims about features that don't exist.
+- [ ] No machine-writing tells from the DESIGN.md table: slogan colons, trailing "sin X", rule-of-three bullets, stock phrases, em dashes, descriptions that restate the title or list the fields.
 - [ ] No console errors or hydration warnings.
 
 ## Taste

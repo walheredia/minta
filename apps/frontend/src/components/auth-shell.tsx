@@ -1,32 +1,17 @@
 import type { ReactNode } from "react"
-import { ArrowLeftRight, CalendarRange, ShieldCheck } from "lucide-react"
 import { Wordmark } from "@/components/brand/wordmark"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { formatAmount } from "@/lib/expenses"
 
 interface AuthShellProps {
   title: string
-  description: string
+  /** Only when it adds information the title and fields don't already give. */
+  description?: string
   /** The form (or success state) for this screen. */
   children: ReactNode
   /** Secondary link shown under the form, e.g. "¿Todavía no tenés una cuenta?". */
   footer: ReactNode
 }
-
-const VALUE_PROPS = [
-  {
-    icon: ArrowLeftRight,
-    text: "Cada gasto en la moneda en que lo pagaste: pesos o dólares, sin conversiones.",
-  },
-  {
-    icon: CalendarRange,
-    text: "El total del mes de un vistazo, separado por moneda.",
-  },
-  {
-    icon: ShieldCheck,
-    text: "Tus gastos personales son solo tuyos.",
-  },
-]
 
 // Static sample figures for the brand panel preview. ARS and USD are shown as
 // separate totals, never combined (ADR 0002), mirroring the real /gastos screen.
@@ -48,13 +33,14 @@ function BrandPanel() {
             Gastá con cabeza. <span className="text-primary">Ahorrá más.</span>
           </h2>
           <p className="text-base text-muted-foreground">
-            Minta te muestra en qué se va tu plata, mes a mes, pensado para la economía argentina.
+            Anotá cada gasto cuando lo hacés. A fin de mes sabés cuánto se fue en pesos y cuánto en
+            dólares.
           </p>
         </div>
 
         <div className="rounded-xl bg-background/70 p-5 ring-1 ring-border backdrop-blur-sm">
           <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            Total del mes
+            Este mes
           </p>
           <div className="mt-3 grid grid-cols-2 gap-4">
             {SAMPLE_TOTALS.map((total) => (
@@ -68,14 +54,10 @@ function BrandPanel() {
           </div>
         </div>
 
-        <ul className="flex flex-col gap-4">
-          {VALUE_PROPS.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-start gap-3 text-sm text-muted-foreground">
-              <Icon aria-hidden className="mt-0.5 size-4 shrink-0 text-primary" />
-              <span>{text}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="text-sm text-muted-foreground">
+          Si pagaste una suscripción con la tarjeta en pesos, se anota en pesos. Si la pagaste con
+          los dólares que tenías guardados, en dólares.
+        </p>
       </div>
 
       <p className="relative text-xs text-muted-foreground">Make money make sense.</p>
@@ -101,7 +83,7 @@ export function AuthShell({ title, description, children, footer }: AuthShellPro
           <div className="flex w-full max-w-sm flex-col gap-8 duration-300 animate-in fade-in slide-in-from-bottom-2 motion-reduce:animate-none">
             <div className="flex flex-col gap-2">
               <h1 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h1>
-              <p className="text-sm text-muted-foreground">{description}</p>
+              {description && <p className="text-sm text-muted-foreground">{description}</p>}
             </div>
 
             {children}
