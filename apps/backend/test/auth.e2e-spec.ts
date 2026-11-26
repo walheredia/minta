@@ -151,4 +151,128 @@ describe('AuthController (e2e)', () => {
       expect(response.body.passwordHash).toBeUndefined();
     });
   });
+
+  describe('POST /api/auth/refresh', () => {
+    function cookieNameValue(cookies: string[], name: string): string {
+      const cookie = cookies.find((value) => value.startsWith(`${name}=`));
+      if (!cookie) {
+        throw new Error(`Expected a ${name} cookie but found none among: ${cookies.join(' | ')}`);
+      }
+      return cookie.split(';')[0]!;
+    }
+
+    it('rotates the refresh token and the new access token keeps the session working', async () => {
+      const email = 'auth-e2e-refresh-rotate@example.com';
+      const password = 'correct-horse-battery';
+      await registerUser(email, password);
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password })
+        .expect(200);
+      const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[];
+      const originalAccessCookie = cookieNameValue(loginCookies, 'minta_access');
+      const originalRefreshCookie = cookieNameValue(loginCookies, 'minta_refresh');
+
+      const refreshResponse = await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', [originalAccessCookie, originalRefreshCookie])
+        .expect(200);
+      const refreshCookies = refreshResponse.headers['set-cookie'] as unknown as string[];
+      const newAccessCookie = cookieNameValue(refreshCookies, 'minta_access');
+      const newRefreshCookie = cookieNameValue(refreshCookies, 'minta_refresh');
+
+      // Note: the access token cookie can coincidentally be byte-identical to
+      // the original if both are issued within the same second (JWT `iat` has
+      // second granularity) — what actually matters, and what reuse detection
+      // relies on, is that the *refresh* token is rotated to a new value.
+      expect(newRefreshCookie).not.toEqual(originalRefreshCookie);
+
+      const meResponse = await request(app.getHttpServer())
+        .get('/api/auth/me')
+        .set('Cookie', [newAccessCookie])
+        .expect(200);
+      expect(meResponse.body).toMatchObject({ email });
+
+      const tokens = await prisma.refreshToken.findMany({ where: { user: { email } } });
+      expect(tokens).toHaveLength(2);
+      expect(tokens.filter((token) => token.revokedAt !== null)).toHaveLength(1);
+      expect(tokens.filter((token) => token.revokedAt === null)).toHaveLength(1);
+    });
+
+    it('rejects a refresh token that was already rotated away (reuse detection)', async () => {
+      const email = 'auth-e2e-refresh-reuse@example.com';
+      const password = 'correct-horse-battery';
+      await registerUser(email, password);
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password })
+        .expect(200);
+      const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[];
+      const originalAccessCookie = cookieNameValue(loginCookies, 'minta_access');
+      const originalRefreshCookie = cookieNameValue(loginCookies, 'minta_refresh');
+
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', [originalAccessCookie, originalRefreshCookie])
+        .expect(200);
+
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', [originalAccessCookie, originalRefreshCookie])
+        .expect(401);
+    });
+
+    it('rejects an expired refresh token', async () => {
+      const email = 'auth-e2e-refresh-expired@example.com';
+      const password = 'correct-horse-battery';
+      await registerUser(email, password);
+
+      const loginResponse = await request(app.getHttpServer())
+        .post('/api/auth/login')
+        .send({ email, password })
+        .expect(200);
+      const loginCookies = loginResponse.headers['set-cookie'] as unknown as string[];
+      const accessCookie = cookieNameValue(loginCookies, 'minta_access');
+      const refreshCookie = cookieNameValue(loginCookies, 'minta_refresh');
+
+      await prisma.refreshToken.updateMany({
+        where: { user: { email } },
+        data: { expiresAt: new Date(Date.now() - 1000) },
+      });
+
+      await request(app.getHttpServer())
+        .post('/api/auth/refresh')
+        .set('Cookie', [accessCookie, refreshCookie])
+        .expect(401);
+    });
+
+    it('rejects a refresh request with no refresh token cookie', async () => {
+      await request(app.getHttpServer()).post('/api/auth/refresh').expect(401);
+    });
+  });
+
+  describe('POST /api/auth/logout', () => {
+    it('clears the session cookies and revokes the refresh token, invalidating the session', async () => {
+      const email = 'auth-e2e-logout@example.com';
+      const password = 'correct-horse-battery';
+      await registerUser(email, password);
+      const agent = request.agent(app.getHttpServer());
+
+      await agent.post('/api/auth/login').send({ email, password }).expect(200);
+      await agent.get('/api/auth/me').expect(200);
+
+      await agent.post('/api/auth/logout').expect(200);
+
+      await agent.get('/api/auth/me').expect(401);
+
+      const tokens = await prisma.refreshToken.findMany({ where: { user: { email } } });
+      expect(tokens.every((token) => token.revokedAt !== null)).toBe(true);
+    });
+
+    it('is idempotent when there is no active session', async () => {
+      await request(app.getHttpServer()).post('/api/auth/logout').expect(200);
+    });
+  });
 });
