@@ -4,12 +4,16 @@
 
 **Blocked by:** 03 (Login y sesión autenticada)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `POST /api/auth/refresh` valida el refresh token recibido contra su hash en `RefreshToken`, lo marca `revokedAt` y emite un par nuevo de cookies (rotación en cada uso).
-- [ ] Un refresh token ya revocado o vencido es rechazado (soporta detectar reuso/robo).
-- [ ] `POST /api/auth/logout` revoca el refresh token activo del usuario y limpia ambas cookies (`minta_access`, `minta_refresh`).
-- [ ] El frontend dispara el refresh de forma transparente cuando el access token expira, sin interrumpir ninguna acción del usuario en curso.
-- [ ] Hay un botón "Cerrar sesión" visible en el área autenticada; al tocarlo, la sesión termina y la siguiente navegación a una ruta protegida redirige a `/ingresar`.
-- [ ] Un test e2e (supertest) cubre: un refresh válido rota el token y permite seguir autenticado, un refresh con token ya revocado falla, y logout invalida la sesión (un `GET /me` posterior devuelve `401`).
-- [ ] Un test de componente (RTL) cubre el botón de logout.
+- [x] `POST /api/auth/refresh` valida el refresh token recibido contra su hash en `RefreshToken`, lo marca `revokedAt` y emite un par nuevo de cookies (rotación en cada uso).
+- [x] Un refresh token ya revocado o vencido es rechazado (soporta detectar reuso/robo).
+- [x] `POST /api/auth/logout` revoca el refresh token activo del usuario y limpia ambas cookies (`minta_access`, `minta_refresh`).
+- [x] El frontend dispara el refresh de forma transparente cuando el access token expira, sin interrumpir ninguna acción del usuario en curso.
+- [x] Hay un botón "Cerrar sesión" visible en el área autenticada; al tocarlo, la sesión termina y la siguiente navegación a una ruta protegida redirige a `/ingresar`.
+- [x] Un test e2e (supertest) cubre: un refresh válido rota el token y permite seguir autenticado, un refresh con token ya revocado falla, y logout invalida la sesión (un `GET /me` posterior devuelve `401`).
+- [x] Un test de componente (RTL) cubre el botón de logout.
+
+## Resolution
+
+Implemented on branch `feat/auth-and-personal-expenses` (commit 209605e (merged in 1f9410d), fixes in f2a7ea7/78d1466). All checklist items done, covered by backend (Vitest unit + e2e/supertest) and frontend (Vitest + React Testing Library) tests, verified by a two-axis (Standards + Spec) code review with findings fixed on the same branch.
