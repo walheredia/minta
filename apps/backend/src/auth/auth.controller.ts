@@ -1,12 +1,13 @@
 import { Body, Controller, Cookies, Get, HttpCode, HttpStatus, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import { ACCESS_TOKEN_COOKIE, AuthGuard, REFRESH_TOKEN_COOKIE } from './auth.guard.js';
-import type { AuthenticatedUser, RequestWithUser } from './auth.guard.js';
+import type { RequestWithUser } from './auth.guard.js';
 import { AuthService } from './auth.service.js';
 import { loginSchema } from './login.schema.js';
 import type { LoginDto } from './login.schema.js';
 import { registerSchema } from './register.schema.js';
 import type { RegisterDto } from './register.schema.js';
+import type { AuthenticatedUser } from './session.types.js';
 
 const ACCESS_TOKEN_MAX_AGE_SECONDS = 60 * 15; // 15 minutes
 const REFRESH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
@@ -55,9 +56,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: unknown,
   ) {
     await this.authService.logout(refreshToken);
-    const adapter = this.adapterHost.httpAdapter;
-    adapter.clearCookie(res, ACCESS_TOKEN_COOKIE);
-    adapter.clearCookie(res, REFRESH_TOKEN_COOKIE);
+    this.clearSessionCookies(res);
   }
 
   @Get('me')
@@ -82,5 +81,11 @@ export class AuthController {
       sameSite: 'lax',
       maxAge: REFRESH_TOKEN_MAX_AGE_SECONDS,
     });
+  }
+
+  private clearSessionCookies(res: unknown): void {
+    const adapter = this.adapterHost.httpAdapter;
+    adapter.clearCookie(res, ACCESS_TOKEN_COOKIE);
+    adapter.clearCookie(res, REFRESH_TOKEN_COOKIE);
   }
 }

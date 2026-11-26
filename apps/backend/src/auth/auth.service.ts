@@ -6,23 +6,17 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { LoginDto } from './login.schema.js';
 import { RegisterDto } from './register.schema.js';
 import { generateRefreshToken, hashRefreshToken, verifyRefreshToken } from './refresh-token.util.js';
+import type { AuthenticatedUser } from './session.types.js';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 const GENERIC_LOGIN_ERROR = 'Email o contraseña incorrectos.';
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
 
-interface SessionUser {
-  id: string;
-  email: string;
-  name: string | null;
-  createdAt: Date;
-}
-
 interface Session {
   accessToken: string;
   refreshToken: string;
-  user: SessionUser;
+  user: AuthenticatedUser;
 }
 
 @Injectable()
@@ -140,7 +134,7 @@ export class AuthService {
     return stored;
   }
 
-  private async startSession(user: SessionUser): Promise<Session> {
+  private async startSession(user: AuthenticatedUser): Promise<Session> {
     const accessToken = await this.jwtService.signAsync(
       { sub: user.id },
       { secret: process.env.JWT_ACCESS_SECRET, expiresIn: ACCESS_TOKEN_TTL },
