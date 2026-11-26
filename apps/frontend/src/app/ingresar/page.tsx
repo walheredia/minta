@@ -5,8 +5,7 @@ import { LoginForm } from "@/components/login-form"
 export default function IngresarPage() {
   return (
     <AuthShell
-      title="Ingresá a tu cuenta"
-      description="Iniciá sesión con tu email y tu contraseña para ver tus gastos."
+      title="Ingresá a Minta"
       footer={
         <>
           ¿Todavía no tenés una cuenta?{" "}

@@ -51,7 +51,7 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
     try {
       await onSave({ amount, currency, description, occurredAt })
     } catch {
-      setError("No pudimos guardar los cambios. Probá de nuevo.")
+      setError("No pudimos guardar los cambios. Probá otra vez.")
       setSaving(false)
     }
   }
@@ -157,7 +157,7 @@ function TotalTile({ currency, label, total, count }: TotalTileProps) {
         {formatAmount(total, currency)}
       </span>
       <span className="text-xs text-muted-foreground">
-        {count === 0 ? "Sin gastos este mes" : count === 1 ? "1 gasto este mes" : `${count} gastos este mes`}
+        {count === 0 ? "Ningún gasto este mes" : count === 1 ? "1 gasto este mes" : `${count} gastos este mes`}
       </span>
     </Card>
   )
@@ -193,7 +193,7 @@ function EmptyState() {
       <ReceiptText aria-hidden className="size-8 text-muted-foreground/60" strokeWidth={1.5} />
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-foreground">Todavía no cargaste ningún gasto.</p>
-        <p className="text-sm text-muted-foreground">Usá el formulario para cargar el primero.</p>
+        <p className="text-sm text-muted-foreground">Empezá por lo último que pagaste.</p>
       </div>
     </div>
   )
@@ -233,7 +233,7 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate, loading
       setConfirmingDeleteId(null)
       setDeleteError(null)
     } else {
-      setDeleteError("No pudimos eliminar el gasto. Probá de nuevo.")
+      setDeleteError("No pudimos eliminar el gasto. Probá otra vez.")
     }
   }
 
@@ -242,13 +242,13 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate, loading
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <TotalTile
           currency="ARS"
-          label="Total del mes en pesos"
+          label="Gastado en pesos"
           total={totals.ARS}
           count={countThisMonth(expenses, "ARS", referenceDate)}
         />
         <TotalTile
           currency="USD"
-          label="Total del mes en dólares"
+          label="Gastado en dólares"
           total={totals.USD}
           count={countThisMonth(expenses, "USD", referenceDate)}
         />
