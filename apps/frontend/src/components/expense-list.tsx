@@ -18,6 +18,8 @@ interface ExpenseListProps {
   expenses: Expense[]
   onEdit: (id: string, payload: ExpenseInput) => Promise<Expense | null>
   onDelete: (id: string) => Promise<boolean>
+  /** Month the totals are scoped to; defaults to the current month. Overridable for tests. */
+  referenceDate?: Date
 }
 
 function toDateInputValue(occurredAt: string): string {
@@ -130,8 +132,8 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
 
 // Two separate totals (ARS, USD) are shown side by side and never combined
 // or converted into one another — see ADR 0002.
-export function ExpenseList({ expenses, onEdit, onDelete }: ExpenseListProps) {
-  const totals = totalsByCurrency(expenses)
+export function ExpenseList({ expenses, onEdit, onDelete, referenceDate }: ExpenseListProps) {
+  const totals = totalsByCurrency(expenses, referenceDate)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -160,7 +162,7 @@ export function ExpenseList({ expenses, onEdit, onDelete }: ExpenseListProps) {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Card>
           <CardContent className="flex flex-col gap-1">
-            <CardDescription>Total en pesos</CardDescription>
+            <CardDescription>Total del mes en pesos</CardDescription>
             <CardTitle
               data-testid="total-ARS"
               className="text-xl font-semibold text-foreground"
@@ -171,7 +173,7 @@ export function ExpenseList({ expenses, onEdit, onDelete }: ExpenseListProps) {
         </Card>
         <Card>
           <CardContent className="flex flex-col gap-1">
-            <CardDescription>Total en dólares</CardDescription>
+            <CardDescription>Total del mes en dólares</CardDescription>
             <CardTitle
               data-testid="total-USD"
               className="text-xl font-semibold text-foreground"

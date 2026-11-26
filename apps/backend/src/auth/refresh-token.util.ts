@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'node:crypto';
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 
 /**
  * Generates a new opaque, high-entropy refresh token. The raw value is only
@@ -20,8 +20,12 @@ export function hashRefreshToken(token: string): string {
 
 /**
  * Compares a candidate refresh token (as presented by a client) against the
- * hash stored for it in the database.
+ * hash stored for it in the database. Uses a timing-safe comparison so the
+ * check doesn't leak how many leading bytes of a guessed hash matched.
  */
 export function verifyRefreshToken(token: string, storedHash: string): boolean {
-  return hashRefreshToken(token) === storedHash;
+  const candidate = Buffer.from(hashRefreshToken(token), 'hex');
+  const stored = Buffer.from(storedHash, 'hex');
+
+  return candidate.length === stored.length && timingSafeEqual(candidate, stored);
 }

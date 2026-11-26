@@ -11,3 +11,14 @@ export interface AuthenticatedUser {
   name: string | null;
   createdAt: Date;
 }
+
+/**
+ * The pair of session tokens plus the user they belong to, as returned by
+ * `AuthService.login`/`refresh` and consumed by `AuthController` to set
+ * cookies and shape the HTTP response.
+ */
+export interface Session {
+  accessToken: string;
+  refreshToken: string;
+  user: AuthenticatedUser;
+}

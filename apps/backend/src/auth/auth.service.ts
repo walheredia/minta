@@ -6,18 +6,12 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { LoginDto } from './login.schema.js';
 import { RegisterDto } from './register.schema.js';
 import { generateRefreshToken, hashRefreshToken, verifyRefreshToken } from './refresh-token.util.js';
-import type { AuthenticatedUser } from './session.types.js';
+import type { AuthenticatedUser, Session } from './session.types.js';
 
 const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 const GENERIC_LOGIN_ERROR = 'Email o contraseña incorrectos.';
 const ACCESS_TOKEN_TTL = '15m';
 const REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30; // 30 days
-
-interface Session {
-  accessToken: string;
-  refreshToken: string;
-  user: AuthenticatedUser;
-}
 
 @Injectable()
 export class AuthService {

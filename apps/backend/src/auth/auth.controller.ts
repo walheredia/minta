@@ -7,16 +7,10 @@ import { loginSchema } from './login.schema.js';
 import type { LoginDto } from './login.schema.js';
 import { registerSchema } from './register.schema.js';
 import type { RegisterDto } from './register.schema.js';
-import type { AuthenticatedUser } from './session.types.js';
+import type { AuthenticatedUser, Session } from './session.types.js';
 
 const ACCESS_TOKEN_MAX_AGE_SECONDS = 60 * 15; // 15 minutes
 const REFRESH_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 30; // 30 days
-
-interface Session {
-  accessToken: string;
-  refreshToken: string;
-  user: AuthenticatedUser;
-}
 
 @Controller('auth')
 export class AuthController {

@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from "vitest"
 import { ExpenseList } from "./expense-list"
 import type { Expense } from "@/lib/expenses"
 
+// Totals are scoped to the current month; the fixtures below are all
+// January 2026, so pass that as `referenceDate` instead of relying on the
+// real clock (keeps the test deterministic regardless of when it runs).
+const REFERENCE_DATE = new Date("2026-01-25T12:00:00.000Z")
+
 const expenses: Expense[] = [
   {
     id: "1",
@@ -53,7 +58,7 @@ describe("ExpenseList", () => {
   })
 
   it("shows the ARS and USD totals separately, never combined or converted", () => {
-    render(<ExpenseList expenses={expenses} {...noopHandlers()} />)
+    render(<ExpenseList expenses={expenses} referenceDate={REFERENCE_DATE} {...noopHandlers()} />)
 
     const arsTotal = screen.getByTestId("total-ARS")
     const usdTotal = screen.getByTestId("total-USD")
@@ -61,6 +66,30 @@ describe("ExpenseList", () => {
     expect(arsTotal).toHaveTextContent("1.500,25")
     expect(usdTotal).toHaveTextContent("50,00")
     expect(arsTotal.textContent).not.toContain(usdTotal.textContent ?? "__none__")
+  })
+
+  it("excludes expenses from other months from the totals, while still listing them", () => {
+    const otherMonthExpense: Expense = {
+      id: "4",
+      amount: "999",
+      currency: "ARS",
+      description: "Gasto de otro mes",
+      occurredAt: "2025-12-31T00:00:00.000Z",
+      createdAt: "2025-12-31T00:00:00.000Z",
+      updatedAt: "2025-12-31T00:00:00.000Z",
+      userId: "user_1",
+    }
+
+    render(
+      <ExpenseList
+        expenses={[...expenses, otherMonthExpense]}
+        referenceDate={REFERENCE_DATE}
+        {...noopHandlers()}
+      />
+    )
+
+    expect(screen.getByText("Gasto de otro mes")).toBeInTheDocument()
+    expect(screen.getByTestId("total-ARS")).toHaveTextContent("1.500,25")
   })
 
   it("shows an empty state when there are no expenses", () => {
