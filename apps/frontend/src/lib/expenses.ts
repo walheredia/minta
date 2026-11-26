@@ -11,6 +11,14 @@ export interface Expense {
   userId: string
 }
 
+/** Shape of the editable fields sent to the backend on create/update. */
+export interface ExpenseInput {
+  amount: string
+  currency: Currency
+  description: string
+  occurredAt: string
+}
+
 const CURRENCY_FORMATTERS: Record<Currency, Intl.NumberFormat> = {
   ARS: new Intl.NumberFormat("es-AR", { style: "currency", currency: "ARS" }),
   USD: new Intl.NumberFormat("es-AR", { style: "currency", currency: "USD" }),
