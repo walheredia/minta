@@ -1,0 +1,74 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Currency {
+  ARS
+  USD
+}
+
+enum ExpenseVisibility {
+  PERSONAL
+  SHARED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  householdMemberships HouseholdMember[]
+  expenses             Expense[]
+}
+
+model Household {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  HouseholdMember[]
+  expenses Expense[]
+}
+
+model HouseholdMember {
+  id          String   @id @default(cuid())
+  householdId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@unique([householdId, userId])
+}
+
+model Expense {
+  id          String            @id @default(cuid())
+  amount      Decimal           @db.Decimal(12, 2)
+  currency    Currency
+  description String
+  occurredAt  DateTime
+  visibility  ExpenseVisibility @default(PERSONAL)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  userId      String
+  householdId String?
+
+  user      User       @relation(fields: [userId], references: [id])
+  household Household? @relation(fields: [householdId], references: [id])
+
+  @@index([userId, occurredAt])
+  @@index([householdId, occurredAt])
+}
