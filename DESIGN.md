@@ -1,0 +1,134 @@
+# Minta Design System
+
+The visual and interaction contract for every screen in `apps/frontend`. Agents read this before touching UI (via the `ui-design` skill) and `code-review` treats it as a standards source.
+
+When a UI decision gets made that this file doesn't cover, add it here in the same change — the way `GLOSSARY.md` grows with domain terms.
+
+## Personality
+
+**"Make money make sense."** Minta is a calm, trustworthy place to look at money. It should feel like a modern fintech product (think Mercury, Linear, Copilot Money), not an admin panel and not a crypto app.
+
+- **Calm over loud.** Mostly neutral surfaces; color is reserved for meaning (brand, money in/out, state). One accent moment per screen.
+- **Numbers are the hero.** Amounts are the largest, most legible thing on a money screen. Labels whisper, figures speak.
+- **Dense but breathable.** Generous outer spacing, tight inner grouping. Related things touch; unrelated things get air.
+- **Rioplatense voice.** Copy uses voseo ("Ingresá", "Cargá"), short sentences, no jargon. End-user terms come from `GLOSSARY.md` ("Gasto", "Hogar").
+
+## Tokens
+
+All tokens live in `apps/frontend/src/app/globals.css` as CSS variables and are exposed to Tailwind through `@theme inline`. **Never hard-code a color, radius, or shadow in a component** — use the semantic utility (`bg-card`, `text-muted-foreground`, `ring-border`…). If a needed token doesn't exist, add it to `globals.css` and document it here.
+
+### Color
+
+Neutrals are **tinted toward the brand hue (~165, mint)** with very low chroma. Pure greys (`oklch(x 0 0)`) are not used for surfaces — they read as unstyled.
+
+| Token | Role |
+| --- | --- |
+| `background` | Page canvas. Dark: deep green-black, never `#000`. |
+| `card` | Raised surface (cards, panels, popovers) — one step lighter than `background` in dark mode, white on a faintly tinted canvas in light mode. |
+| `muted` / `muted-foreground` | Secondary surfaces (table header, inset areas) / secondary text. |
+| `border`, `input` | Hairlines and field outlines. Low contrast; structure comes from spacing first. |
+| `primary` | Brand mint. Primary actions, active nav, focus ring, links. |
+| `gold` | Accent for savings / positive highlights. Use at most once per screen. |
+| `destructive` | Errors and destructive actions only. |
+| `chart-1…5` | Data viz series, mint-led and distinguishable in both themes. |
+
+Utilities defined in `globals.css`:
+- `bg-brand-glow`: soft mint/gold radial glow built from `primary` and `gold`. Brand surfaces only (auth brand panel, future hero areas); never behind data.
+
+Rules:
+- Text on any surface meets **WCAG AA** (4.5:1 body, 3:1 large text and UI glyphs).
+- Status is never conveyed by color alone — pair it with an icon or text.
+- Both themes are first-class. Every screen is checked in light **and** dark.
+
+### Typography
+
+- **UI font:** Geist (`font-sans`). **Figures:** Geist Mono (`font-mono`) or Geist with `tabular-nums` for any amount, date column, or number that can be compared vertically.
+- Scale (Tailwind classes):
+
+| Use | Class |
+| --- | --- |
+| Hero figure (balance, monthly total) | `text-3xl sm:text-4xl font-semibold tracking-tight tabular-nums` |
+| Page title | `text-2xl font-semibold tracking-tight` |
+| Section / card title | `text-base font-semibold` |
+| Body | `text-sm` |
+| Label, meta, helper | `text-xs` or `text-sm text-muted-foreground` |
+| Overline (rare) | `text-xs font-medium uppercase tracking-wider text-muted-foreground` |
+
+- Max two weights per view (regular + semibold; medium for labels/buttons).
+- Line length for prose: `max-w-prose` or narrower.
+
+### Spacing & layout
+
+- 4px base grid (Tailwind spacing). Prefer `gap-*` over margins.
+- Inner grouping `gap-1.5`–`gap-2` (label ↔ field), field groups `gap-4`–`gap-5`, sections `gap-8`–`gap-10`.
+- Page gutters: `px-4` mobile, `px-6`+ from `sm`. App content max width `max-w-5xl` (dashboards) or `max-w-2xl` (single-column flows).
+- Mobile first. Every screen must work at **390px** wide with no horizontal scroll, and look intentional at **1440px** (no lone narrow column floating in a void).
+
+### Shape & depth
+
+- Radius: `--radius` = 0.75rem. Cards `rounded-xl`, controls `rounded-lg`, pills/badges `rounded-full`.
+- Depth comes from **surface contrast + hairline ring**, not heavy shadows. Light mode may use `shadow-xs`/`shadow-sm` on raised cards; dark mode uses a lighter surface + `ring-1 ring-border`.
+- One elevated layer at a time (a dialog over a page, not cards inside cards inside cards).
+
+### Controls
+
+- Form controls and primary buttons in forms are **`h-10`** (`size="lg"` on `Button`, `h-10` on `Input`/`Select`). The compact `h-8` sizes are for toolbars and dense rows only.
+- Every field has a visible `<Label>`. Placeholder text is an example, never the label.
+- Focus is always visible (`ring-3 ring-ring/50`). Never remove outlines without a replacement.
+- Touch targets ≥ 40px on mobile.
+- Icons: `lucide-react`, `size-4` inline, stroke default. Icon-only buttons need `aria-label`.
+
+### Motion
+
+- Subtle and fast: 150–200ms, `ease-out`. Use `tw-animate-css` (`animate-in fade-in slide-in-from-bottom-2`) for entering content.
+- Animate opacity/transform only. Respect `motion-reduce:` — disable non-essential motion.
+- No bouncing, no looping decoration.
+
+## Patterns
+
+### Auth screens (ingresar, registro)
+
+- **Desktop (`lg+`)**: two-column split. Left: brand panel (wordmark, tagline, 2–3 value props, subtle mint gradient/glow on a `card`-tone surface). Right: the form, vertically centered, `max-w-sm`.
+- **Mobile**: brand panel collapses to the wordmark above the form. No card chrome around the form on mobile — the screen *is* the card.
+- Title (`text-2xl`), one-line description, fields, full-width primary button, then the secondary link ("¿Todavía no tenés una cuenta? Registrate") below the form.
+- Success and error states are inline, with icon + text, announced via `role="status"` / `role="alert"`.
+
+### App shell (authenticated area)
+
+- Top bar: wordmark left, primary navigation, user/session actions right (theme toggle, cerrar sesión). Sticky, `backdrop-blur`, hairline bottom border.
+- Page header inside content: title + one-line context + primary action aligned right (stacks on mobile).
+
+### Money
+
+- Amounts always formatted with `formatAmount` (es-AR separators) and `tabular-nums`, right-aligned in lists/tables.
+- Currency is shown as a small muted badge (`ARS`, `USD`) next to the figure when both currencies can appear.
+- **ARS and USD are never summed or converted into one figure** (ADR 0002). Totals appear as separate stat tiles side by side.
+- Stat tile: overline label, hero figure, optional delta/meta line. No icons-in-colored-circles filler.
+
+### Lists of records (gastos)
+
+- Rows, not stacked cards: one surface containing the list, rows separated by hairlines, `py-3`, hover `bg-muted/50`.
+- Primary text (description) left, meta (date, currency) muted beneath it, amount right.
+- Below `sm` a row becomes two lines: description + amount on top, date + actions underneath, so descriptions don't collapse to a few characters.
+- Row actions (editar, eliminar) are icon buttons or a `…` menu, visible on hover/focus on fine pointers (`pointer-fine:`) and always visible on touch, with 40px touch targets.
+- Edit happens inline in the row (fields on one line from `sm`); the add form lives beside the list on desktop (sticky right column) and above it on mobile.
+- Destructive actions confirm inline or in a dialog; the confirm button uses `variant="destructive"`.
+
+### States (every data view must design all of them)
+
+- **Loading**: skeletons that match the final layout. No bare spinners for page-level loads.
+- **Empty**: icon + one-line explanation + the primary action to fix it ("Cargá tu primer gasto").
+- **Error**: inline message with icon, what happened, and a retry when possible.
+- **Success**: brief inline confirmation; avoid toasts for things that are already visible on screen.
+
+## Anti-patterns (reject in review)
+
+- A single small card floating in the middle of a large empty dark canvas.
+- Pure black (`#000`) or pure-grey (`oklch(x 0 0)`) surfaces.
+- Browser default fonts (serif/Times) anywhere — means the font pipeline is broken.
+- Every section wrapped in its own card; cards nested in cards.
+- Colored icon-in-a-circle decorations, gratuitous gradients on text, emoji as UI.
+- Hard-coded hex/rgb/oklch values or arbitrary `text-[13px]`-style values in components.
+- Labels as placeholders, low-contrast grey-on-grey text, invisible focus.
+- Mixing ARS and USD in one total.
+- Layouts verified only at one viewport or one theme.

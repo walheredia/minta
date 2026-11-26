@@ -1,0 +1,5 @@
+interface:
+  display_name: "UI Design"
+  short_description: "Design, build and visually verify Minta UI"
+policy:
+  allow_implicit_invocation: true

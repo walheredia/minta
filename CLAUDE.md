@@ -11,3 +11,7 @@ Default five-role vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, `
 ### Domain docs
 
 Single-context layout: `GLOSSARY.md` + `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### UI design
+
+Design contract in `DESIGN.md` at the repo root; process in the `ui-design` skill. Whenever a workflow skill (`grill-with-docs`, `to-spec`, `to-tickets`, `implement`, `code-review`) touches work with a UI surface in `apps/frontend`, apply the per-stage rules in `docs/agents/ui-design.md`. UI work is never done without the skill's visual verification loop.
