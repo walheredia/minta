@@ -31,7 +31,7 @@ export function ExpensesManager() {
 
     async function loadExpenses() {
       try {
-        const response = await fetch("/api/expenses")
+        const response = await apiFetch("/api/expenses")
 
         if (!response.ok) {
           if (!cancelled) setLoadError("No pudimos cargar tus gastos. Probá de nuevo.")

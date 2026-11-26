@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
+import { apiFetch } from "@/lib/api-client"
 import type { Currency, Expense } from "@/lib/expenses"
 
 type Status = "idle" | "submitting"
@@ -45,7 +46,7 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
     setErrors([])
 
     try {
-      const response = await fetch("/api/expenses", {
+      const response = await apiFetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount, currency, description, occurredAt }),

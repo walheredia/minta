@@ -2,19 +2,13 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { JwtService } from '@nestjs/jwt';
 import { parseCookie } from 'cookie';
 import { PrismaService } from '../prisma/prisma.service.js';
+import type { AuthenticatedUser } from './session.types.js';
 
 export const ACCESS_TOKEN_COOKIE = 'minta_access';
 export const REFRESH_TOKEN_COOKIE = 'minta_refresh';
 
 interface AccessTokenPayload {
   sub: string;
-}
-
-export interface AuthenticatedUser {
-  id: string;
-  email: string;
-  name: string | null;
-  createdAt: Date;
 }
 
 export interface RequestWithUser {
