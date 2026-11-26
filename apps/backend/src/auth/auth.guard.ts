@@ -4,6 +4,7 @@ import { parseCookie } from 'cookie';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 export const ACCESS_TOKEN_COOKIE = 'minta_access';
+export const REFRESH_TOKEN_COOKIE = 'minta_refresh';
 
 interface AccessTokenPayload {
   sub: string;
