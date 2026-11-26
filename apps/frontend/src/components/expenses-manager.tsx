@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { CircleAlert } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ function sortByOccurredAtDescending(expenses: Expense[]): Expense[] {
 export function ExpensesManager() {
   const [expenses, setExpenses] = useState<Expense[]>([])
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +44,8 @@ export function ExpensesManager() {
         if (!cancelled) setExpenses(sortByOccurredAtDescending(data))
       } catch {
         if (!cancelled) setLoadError("No pudimos conectar con el servidor. Probá de nuevo.")
+      } finally {
+        if (!cancelled) setLoading(false)
       }
     }
 
@@ -89,25 +93,49 @@ export function ExpensesManager() {
     }
   }
 
+  const monthLabel = new Date().toLocaleDateString("es-AR", { month: "long", year: "numeric" })
+
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Cargar un gasto</CardTitle>
-          <CardDescription>Monto, moneda, descripción y fecha.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ExpenseForm onCreated={handleCreated} />
-        </CardContent>
-      </Card>
-
-      {loadError && (
-        <p role="alert" className="text-sm text-destructive">
-          {loadError}
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 lg:py-10">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">Gastos</h1>
+        <p className="text-sm text-muted-foreground">
+          Tus gastos personales · <span suppressHydrationWarning>{monthLabel}</span>
         </p>
-      )}
+      </div>
 
-      <ExpenseList expenses={expenses} onEdit={handleEdit} onDelete={handleDelete} />
-    </div>
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <aside className="lg:sticky lg:top-20 lg:order-last">
+          <Card className="shadow-xs dark:shadow-none">
+            <CardHeader>
+              <CardTitle className="font-semibold">Cargar un gasto</CardTitle>
+              <CardDescription>Monto, moneda, descripción y fecha.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ExpenseForm onCreated={handleCreated} />
+            </CardContent>
+          </Card>
+        </aside>
+
+        <div className="flex min-w-0 flex-col gap-6">
+          {loadError && (
+            <p
+              role="alert"
+              className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+            >
+              <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+              <span>{loadError}</span>
+            </p>
+          )}
+
+          <ExpenseList
+            expenses={expenses}
+            loading={loading}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
+      </div>
+    </main>
   )
 }

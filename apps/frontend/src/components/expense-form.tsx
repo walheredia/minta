@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import { CircleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -78,30 +79,34 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       aria-label="Cargar gasto"
       className="flex flex-col gap-4"
     >
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-amount">Monto</Label>
-        <Input
-          id="expense-amount"
-          name="amount"
-          type="number"
-          inputMode="decimal"
-          step="0.01"
-          value={amount}
-          onChange={(event) => setAmount(event.target.value)}
-        />
-      </div>
+      <div className="grid grid-cols-[minmax(0,1fr)_6.5rem] gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="expense-amount">Monto</Label>
+          <Input
+            id="expense-amount"
+            name="amount"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            placeholder="0,00"
+            className="tabular-nums"
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+          />
+        </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-currency">Moneda</Label>
-        <Select
-          id="expense-currency"
-          name="currency"
-          value={currency}
-          onChange={(event) => setCurrency(event.target.value as Currency)}
-        >
-          <option value="ARS">ARS</option>
-          <option value="USD">USD</option>
-        </Select>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="expense-currency">Moneda</Label>
+          <Select
+            id="expense-currency"
+            name="currency"
+            value={currency}
+            onChange={(event) => setCurrency(event.target.value as Currency)}
+          >
+            <option value="ARS">ARS</option>
+            <option value="USD">USD</option>
+          </Select>
+        </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -110,6 +115,7 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
           id="expense-description"
           name="description"
           type="text"
+          placeholder="Ej.: Supermercado"
           value={description}
           onChange={(event) => setDescription(event.target.value)}
         />
@@ -127,14 +133,20 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       </div>
 
       {errors.length > 0 && (
-        <ul role="alert" className="flex flex-col gap-1 text-sm text-destructive">
-          {errors.map((message) => (
-            <li key={message}>{message}</li>
-          ))}
-        </ul>
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+        >
+          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <ul className="flex flex-col gap-1">
+            {errors.map((message) => (
+              <li key={message}>{message}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
-      <Button type="submit" disabled={status === "submitting"}>
+      <Button type="submit" size="lg" className="mt-1 w-full" disabled={status === "submitting"}>
         {status === "submitting" ? "Cargando…" : "Cargar gasto"}
       </Button>
     </form>

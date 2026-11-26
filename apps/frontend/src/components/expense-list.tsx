@@ -1,16 +1,13 @@
 "use client"
 
 import { useState, type FormEvent } from "react"
+import { CircleAlert, Pencil, ReceiptText, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { formatAmount, totalsByCurrency } from "@/lib/expenses"
 import type { Currency, Expense, ExpenseInput } from "@/lib/expenses"
 
@@ -20,6 +17,8 @@ interface ExpenseListProps {
   onDelete: (id: string) => Promise<boolean>
   /** Month the totals are scoped to; defaults to the current month. Overridable for tests. */
   referenceDate?: Date
+  /** True while the initial list is being fetched: renders skeletons instead of the empty state. */
+  loading?: boolean
 }
 
 function toDateInputValue(occurredAt: string): string {
@@ -62,7 +61,7 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
       noValidate
       onSubmit={handleSubmit}
       aria-label="Editar gasto"
-      className="flex flex-col gap-3"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.5rem_minmax(0,1.4fr)_10rem]"
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`edit-amount-${expense.id}`}>Monto</Label>
@@ -72,6 +71,7 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
           type="number"
           inputMode="decimal"
           step="0.01"
+          className="tabular-nums"
           value={amount}
           onChange={(event) => setAmount(event.target.value)}
         />
@@ -113,26 +113,106 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
+        <p
+          role="alert"
+          className="flex items-start gap-2 rounded-lg bg-destructive/10 px-3 py-2.5 text-sm text-destructive sm:col-span-full"
+        >
+          <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
+          <span>{error}</span>
         </p>
       )}
 
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={saving}>
-          {saving ? "Guardando…" : "Guardar"}
-        </Button>
-        <Button type="button" variant="outline" size="sm" onClick={onCancel} disabled={saving}>
+      <div className="flex justify-end gap-2 sm:col-span-full">
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={saving}>
           Cancelar
+        </Button>
+        <Button type="submit" disabled={saving}>
+          {saving ? "Guardando…" : "Guardar"}
         </Button>
       </div>
     </form>
   )
 }
 
+interface TotalTileProps {
+  currency: Currency
+  label: string
+  total: number
+  count: number
+}
+
+function TotalTile({ currency, label, total, count }: TotalTileProps) {
+  return (
+    <Card className="gap-2 px-5 py-4 shadow-xs sm:gap-3 sm:py-5 dark:shadow-none">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+          {label}
+        </span>
+        <CurrencyBadge currency={currency} />
+      </div>
+      <span
+        data-testid={`total-${currency}`}
+        className="text-2xl font-semibold tracking-tight text-foreground tabular-nums sm:text-3xl"
+      >
+        {formatAmount(total, currency)}
+      </span>
+      <span className="text-xs text-muted-foreground">
+        {count === 0 ? "Sin gastos este mes" : count === 1 ? "1 gasto este mes" : `${count} gastos este mes`}
+      </span>
+    </Card>
+  )
+}
+
+function CurrencyBadge({ currency }: { currency: Currency }) {
+  return (
+    <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+      {currency}
+    </span>
+  )
+}
+
+function ListSkeleton() {
+  return (
+    <div aria-hidden className="divide-y">
+      {[0, 1, 2].map((row) => (
+        <div key={row} className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-20" />
+          </div>
+          <Skeleton className="h-4 w-24" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center gap-3 px-6 py-14 text-center">
+      <ReceiptText aria-hidden className="size-8 text-muted-foreground/60" strokeWidth={1.5} />
+      <div className="flex flex-col gap-1">
+        <p className="text-sm font-medium text-foreground">Todavía no cargaste ningún gasto.</p>
+        <p className="text-sm text-muted-foreground">Usá el formulario para cargar el primero.</p>
+      </div>
+    </div>
+  )
+}
+
+function countThisMonth(expenses: Expense[], currency: Currency, referenceDate: Date = new Date()): number {
+  return expenses.filter((expense) => {
+    const occurred = new Date(expense.occurredAt)
+    return (
+      expense.currency === currency &&
+      occurred.getUTCFullYear() === referenceDate.getUTCFullYear() &&
+      occurred.getUTCMonth() === referenceDate.getUTCMonth()
+    )
+  }).length
+}
+
 // Two separate totals (ARS, USD) are shown side by side and never combined
 // or converted into one another — see ADR 0002.
-export function ExpenseList({ expenses, onEdit, onDelete, referenceDate }: ExpenseListProps) {
+export function ExpenseList({ expenses, onEdit, onDelete, referenceDate, loading = false }: ExpenseListProps) {
   const totals = totalsByCurrency(expenses, referenceDate)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
@@ -158,119 +238,114 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate }: Expen
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Card>
-          <CardContent className="flex flex-col gap-1">
-            <CardDescription>Total del mes en pesos</CardDescription>
-            <CardTitle
-              data-testid="total-ARS"
-              className="text-xl font-semibold text-foreground"
-            >
-              {formatAmount(totals.ARS, "ARS")}
-            </CardTitle>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col gap-1">
-            <CardDescription>Total del mes en dólares</CardDescription>
-            <CardTitle
-              data-testid="total-USD"
-              className="text-xl font-semibold text-foreground"
-            >
-              {formatAmount(totals.USD, "USD")}
-            </CardTitle>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TotalTile
+          currency="ARS"
+          label="Total del mes en pesos"
+          total={totals.ARS}
+          count={countThisMonth(expenses, "ARS", referenceDate)}
+        />
+        <TotalTile
+          currency="USD"
+          label="Total del mes en dólares"
+          total={totals.USD}
+          count={countThisMonth(expenses, "USD", referenceDate)}
+        />
       </div>
 
-      {expenses.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Todavía no cargaste ningún gasto.
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {expenses.map((expense) => (
-            <li key={expense.id}>
-              {editingId === expense.id ? (
-                <Card size="sm">
-                  <CardContent>
+      <Card className="gap-0 py-0 shadow-xs dark:shadow-none">
+        <div className="flex items-center justify-between border-b px-5 py-3.5">
+          <h2 className="text-sm font-semibold text-foreground">Historial</h2>
+          {!loading && expenses.length > 0 && (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {expenses.length === 1 ? "1 gasto" : `${expenses.length} gastos`}
+            </span>
+          )}
+        </div>
+
+        {loading ? (
+          <ListSkeleton />
+        ) : expenses.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <ul className="divide-y">
+            {expenses.map((expense) => (
+              <li key={expense.id} className="group/row">
+                {editingId === expense.id ? (
+                  <div className="bg-muted/40 px-5 py-4">
                     <EditExpenseForm
                       expense={expense}
                       onSave={(payload) => handleSave(expense, payload)}
                       onCancel={() => setEditingId(null)}
                     />
-                  </CardContent>
-                </Card>
-              ) : (
-                <Card size="sm">
-                  <CardContent className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex min-w-0 flex-col">
-                        <span className="truncate font-medium text-foreground">
-                          {expense.description}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(expense.occurredAt).toLocaleDateString("es-AR", {
-                            timeZone: "UTC",
-                          })}
-                        </span>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span className="font-medium text-foreground">
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 px-5 py-3.5 transition-colors hover:bg-muted/40">
+                    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+                      <span className="col-start-1 row-start-1 truncate text-sm font-medium text-foreground">
+                        {expense.description}
+                      </span>
+                      <span className="col-start-1 row-start-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                        {new Date(expense.occurredAt).toLocaleDateString("es-AR", {
+                          timeZone: "UTC",
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                      <div className="col-start-2 row-start-1 flex items-center justify-self-end gap-2 sm:row-span-2 sm:gap-3">
+                        <span className="text-sm font-semibold whitespace-nowrap text-foreground tabular-nums">
                           {formatAmount(expense.amount, expense.currency)}
                         </span>
-                        {confirmingDeleteId !== expense.id && (
-                          <div className="flex gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              aria-label={`Editar ${expense.description}`}
-                              onClick={() => setEditingId(expense.id)}
-                            >
-                              Editar
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              aria-label={`Eliminar ${expense.description}`}
-                              onClick={() => {
-                                setConfirmingDeleteId(expense.id)
-                                setDeleteError(null)
-                              }}
-                            >
-                              Eliminar
-                            </Button>
-                          </div>
-                        )}
+                        <CurrencyBadge currency={expense.currency} />
                       </div>
-                    </div>
-
-                    {confirmingDeleteId === expense.id && (
-                      <div className="flex flex-col gap-2 border-t border-border pt-3">
-                        <p className="text-sm text-foreground">
-                          ¿Seguro que querés eliminar este gasto?
-                        </p>
-                        {deleteError && (
-                          <p role="alert" className="text-sm text-destructive">
-                            {deleteError}
-                          </p>
-                        )}
-                        <div className="flex gap-2">
+                      {confirmingDeleteId !== expense.id && (
+                        <div className="col-start-2 row-start-2 -mr-2 flex justify-self-end transition-opacity sm:col-start-3 sm:row-span-2 sm:row-start-1 sm:mr-0 pointer-fine:opacity-0 pointer-fine:group-hover/row:opacity-100 pointer-fine:group-focus-within/row:opacity-100">
                           <Button
                             type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleConfirmDelete(expense.id)}
+                            variant="ghost"
+                            size="icon"
+                            className="max-sm:-my-1.5 max-sm:size-10"
+                            aria-label={`Editar ${expense.description}`}
+                            onClick={() => setEditingId(expense.id)}
                           >
-                            Sí, eliminar
+                            <Pencil />
                           </Button>
                           <Button
                             type="button"
-                            variant="outline"
-                            size="sm"
+                            variant="ghost"
+                            size="icon"
+                            className="hover:bg-destructive/10 hover:text-destructive max-sm:-my-1.5 max-sm:size-10"
+                            aria-label={`Eliminar ${expense.description}`}
+                            onClick={() => {
+                              setConfirmingDeleteId(expense.id)
+                              setDeleteError(null)
+                            }}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {confirmingDeleteId === expense.id && (
+                      <div className="flex flex-col gap-3 rounded-lg bg-destructive/5 p-3 ring-1 ring-destructive/20 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex flex-col gap-1">
+                          <p className="text-sm text-foreground">
+                            ¿Seguro que querés eliminar este gasto?
+                          </p>
+                          {deleteError && (
+                            <p role="alert" className="flex items-center gap-1.5 text-sm text-destructive">
+                              <CircleAlert aria-hidden className="size-4 shrink-0" />
+                              {deleteError}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
                             onClick={() => {
                               setConfirmingDeleteId(null)
                               setDeleteError(null)
@@ -278,16 +353,23 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate }: Expen
                           >
                             Cancelar
                           </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={() => handleConfirmDelete(expense.id)}
+                          >
+                            Sí, eliminar
+                          </Button>
                         </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </Card>
     </div>
   )
 }
