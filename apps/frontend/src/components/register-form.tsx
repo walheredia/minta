@@ -1,11 +1,10 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-
-type Status = "idle" | "submitting" | "success"
+import { useCredentialsForm } from "@/lib/use-credentials-form"
 
 function extractErrorMessages(body: unknown): string[] {
   const message = (body as { message?: unknown } | null)?.message
@@ -22,38 +21,16 @@ function extractErrorMessages(body: unknown): string[] {
 }
 
 export function RegisterForm() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [errors, setErrors] = useState<string[]>([])
-  const [status, setStatus] = useState<Status>("idle")
+  const [success, setSuccess] = useState(false)
+  const { email, setEmail, password, setPassword, errors, status, handleSubmit } =
+    useCredentialsForm({
+      endpoint: "/api/auth/register",
+      extractErrorMessages,
+      networkErrorMessage: "No pudimos conectar con el servidor. Probá de nuevo.",
+      onSuccess: () => setSuccess(true),
+    })
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setStatus("submitting")
-    setErrors([])
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!response.ok) {
-        const body = await response.json().catch(() => null)
-        setErrors(extractErrorMessages(body))
-        setStatus("idle")
-        return
-      }
-
-      setStatus("success")
-    } catch {
-      setErrors(["No pudimos conectar con el servidor. Probá de nuevo."])
-      setStatus("idle")
-    }
-  }
-
-  if (status === "success") {
+  if (success) {
     return (
       <div role="status" className="flex flex-col gap-2 text-center">
         <p className="text-base font-medium text-foreground">
