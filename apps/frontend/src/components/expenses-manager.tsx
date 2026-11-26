@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/card"
 import { ExpenseForm } from "@/components/expense-form"
 import { ExpenseList } from "@/components/expense-list"
-import type { Expense } from "@/lib/expenses"
+import { apiFetch } from "@/lib/api-client"
+import type { Expense, ExpenseInput } from "@/lib/expenses"
 
 function sortByOccurredAtDescending(expenses: Expense[]): Expense[] {
   return [...expenses].sort(
@@ -55,6 +56,39 @@ export function ExpensesManager() {
     setExpenses((previous) => sortByOccurredAtDescending([expense, ...previous]))
   }
 
+  async function handleEdit(id: string, payload: ExpenseInput): Promise<Expense | null> {
+    try {
+      const response = await apiFetch(`/api/expenses/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+
+      if (!response.ok) return null
+
+      const updated = (await response.json()) as Expense
+      setExpenses((previous) =>
+        sortByOccurredAtDescending(previous.map((expense) => (expense.id === id ? updated : expense)))
+      )
+      return updated
+    } catch {
+      return null
+    }
+  }
+
+  async function handleDelete(id: string): Promise<boolean> {
+    try {
+      const response = await apiFetch(`/api/expenses/${id}`, { method: "DELETE" })
+
+      if (!response.ok) return false
+
+      setExpenses((previous) => previous.filter((expense) => expense.id !== id))
+      return true
+    } catch {
+      return false
+    }
+  }
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-8 sm:px-6">
       <Card>
@@ -73,7 +107,7 @@ export function ExpensesManager() {
         </p>
       )}
 
-      <ExpenseList expenses={expenses} />
+      <ExpenseList expenses={expenses} onEdit={handleEdit} onDelete={handleDelete} />
     </div>
   )
 }
