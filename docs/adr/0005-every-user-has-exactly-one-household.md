@@ -1,0 +1,3 @@
+# Every User belongs to exactly one Household, auto-created at registration
+
+Although inviting members to a **Household** is not built yet, every **User** gets a one-person Household automatically at registration (named "Hogar de {name}", or "Mi Hogar" without a name), and belongs to exactly one Household at a time. **Household Category**s are owned by the Household from day one, so when invitations ship, categories are shared with new members without any data migration. Allowing multiple Households per User was rejected because it would make "which Household's categories does this User see?" ambiguous; joining another Household means leaving the current one.
