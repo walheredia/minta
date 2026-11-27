@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Minta — Make money make sense",
-  description: "Controlá y analizá tus gastos. Gastá con cabeza, ahorrá más, hacé crecer tu patrimonio.",
+  title: "Minta · Make money make sense",
+  description: "Anotá tus gastos en pesos y en dólares y fijate a dónde se va la plata cada mes.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

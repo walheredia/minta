@@ -11,7 +11,37 @@ When a UI decision gets made that this file doesn't cover, add it here in the sa
 - **Calm over loud.** Mostly neutral surfaces; color is reserved for meaning (brand, money in/out, state). One accent moment per screen.
 - **Numbers are the hero.** Amounts are the largest, most legible thing on a money screen. Labels whisper, figures speak.
 - **Dense but breathable.** Generous outer spacing, tight inner grouping. Related things touch; unrelated things get air.
-- **Rioplatense voice.** Copy uses voseo ("Ingresá", "Cargá"), short sentences, no jargon. End-user terms come from `GLOSSARY.md` ("Gasto", "Hogar").
+- **Rioplatense voice.** Copy sounds like a person from Buenos Aires explaining the app to a friend. See [Voice & copy](#voice--copy).
+
+## Voice & copy
+
+Copy is part of the design, and it is where machine-written UI shows first. Write like a person talking, not like a feature list.
+
+### Rules
+
+- **Voseo, plain words.** "Ingresá", "Cargá", "plata", "anotá". End-user terms come from `GLOSSARY.md` ("Gasto", "Hogar").
+- **Concrete over abstract.** Name a real situation instead of a quality. Not "control total de tus finanzas" but "a fin de mes sabés a dónde fue la plata".
+- **Say it once.** A description must add something the title and the visible fields don't already say. If it only restates them, delete it. Many screens need a title and nothing else.
+- **Only claim what's true today.** No promises about features that don't exist (Hogar, ingresos, inversiones) and no unverifiable claims ("gratis", "seguro", "en segundos").
+- **Errors say what happened and what to do**, in that order, in plain words: "Sin conexión con el servidor. Revisá tu internet y probá otra vez."
+- **Buttons are verbs** that name the result: "Cargar gasto", "Crear cuenta", "Sí, eliminar".
+- **Read it out loud.** If nobody would say it that way across a table, rewrite it.
+
+### Machine-writing tells (reject in review)
+
+| Tell | Instead of | Write |
+| --- | --- | --- |
+| Colon that sets up a reveal or a list inside a slogan | "Cada gasto en su moneda: pesos o dólares, sin conversiones." | "Si lo pagaste en pesos, va en pesos. Si lo pagaste con dólares, va en dólares." |
+| Trailing negation as a selling point ("sin X", "sin vueltas", "sin complicaciones") | "…sin conversiones." | State what *does* happen. |
+| Rule of three: three parallel bullets or adjectives with icons | Three feature bullets of the same length | One concrete sentence, or show the thing (a real screen, a real example) |
+| Stock phrases | "de un vistazo", "en un solo lugar", "pensado para vos", "llevá tu X al siguiente nivel", "mes a mes" | The specific fact |
+| Em dashes (—) for asides and in titles | "Minta — Make money make sense" | A period, a comma, or `·` in titles |
+| Paired slogan fragments invented for a screen | "Simple. Rápido. Tuyo." | A normal sentence |
+| Description that restates the title | "Ingresá a tu cuenta" / "Iniciá sesión con tu email y tu contraseña…" | Drop the description |
+| Field list as helper text | "Monto, moneda, descripción y fecha." above those exact fields | Nothing |
+| Reassurance filler | "Tus datos son solo tuyos.", "Tranqui, es fácil." | Nothing, or a specific fact backed by the product |
+
+The brand tagline ("Make money make sense", "Gastá con cabeza. Ahorrá más.") is owned by the product and stays as is. Don't coin new taglines per screen.
 
 ## Tokens
 
@@ -88,9 +118,9 @@ Rules:
 
 ### Auth screens (ingresar, registro)
 
-- **Desktop (`lg+`)**: two-column split. Left: brand panel (wordmark, tagline, 2–3 value props, subtle mint gradient/glow on a `card`-tone surface). Right: the form, vertically centered, `max-w-sm`.
+- **Desktop (`lg+`)**: two-column split. Left: brand panel (wordmark, tagline, one concrete sentence, a sample of the real product, subtle mint glow). No feature-bullet lists. Right: the form, vertically centered, `max-w-sm`.
 - **Mobile**: brand panel collapses to the wordmark above the form. No card chrome around the form on mobile — the screen *is* the card.
-- Title (`text-2xl`), one-line description, fields, full-width primary button, then the secondary link ("¿Todavía no tenés una cuenta? Registrate") below the form.
+- Title (`text-2xl`), an optional one-line description only when it adds information (e.g. password rules), fields, full-width primary button, then the secondary link ("¿Todavía no tenés una cuenta? Registrate") below the form.
 - Success and error states are inline, with icon + text, announced via `role="status"` / `role="alert"`.
 
 ### App shell (authenticated area)

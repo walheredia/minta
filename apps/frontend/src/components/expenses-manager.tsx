@@ -5,7 +5,6 @@ import { CircleAlert } from "lucide-react"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -36,14 +35,14 @@ export function ExpensesManager() {
         const response = await apiFetch("/api/expenses")
 
         if (!response.ok) {
-          if (!cancelled) setLoadError("No pudimos cargar tus gastos. Probá de nuevo.")
+          if (!cancelled) setLoadError("No pudimos cargar tus gastos. Probá otra vez.")
           return
         }
 
         const data = (await response.json()) as Expense[]
         if (!cancelled) setExpenses(sortByOccurredAtDescending(data))
       } catch {
-        if (!cancelled) setLoadError("No pudimos conectar con el servidor. Probá de nuevo.")
+        if (!cancelled) setLoadError("Sin conexión con el servidor. Revisá tu internet y probá otra vez.")
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -99,8 +98,8 @@ export function ExpensesManager() {
     <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 lg:py-10">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">Gastos</h1>
-        <p className="text-sm text-muted-foreground">
-          Tus gastos personales · <span suppressHydrationWarning>{monthLabel}</span>
+        <p suppressHydrationWarning className="text-sm text-muted-foreground first-letter:uppercase">
+          {monthLabel}
         </p>
       </div>
 
@@ -108,8 +107,7 @@ export function ExpensesManager() {
         <aside className="lg:sticky lg:top-20 lg:order-last">
           <Card className="shadow-xs dark:shadow-none">
             <CardHeader>
-              <CardTitle className="font-semibold">Cargar un gasto</CardTitle>
-              <CardDescription>Monto, moneda, tipo de gasto y fecha.</CardDescription>
+              <CardTitle className="font-semibold">Nuevo gasto</CardTitle>
             </CardHeader>
             <CardContent>
               <ExpenseForm onCreated={handleCreated} />

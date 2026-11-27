@@ -29,7 +29,7 @@ function extractErrorMessages(body: unknown): string[] {
     return [message]
   }
 
-  return ["No pudimos guardar el gasto. Probá de nuevo."]
+  return ["No pudimos guardar el gasto. Probá otra vez."]
 }
 
 interface ExpenseFormProps {
@@ -86,7 +86,7 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       setOccurredAt(todayIsoDate())
       setStatus("idle")
     } catch {
-      setErrors(["No pudimos conectar con el servidor. Probá de nuevo."])
+      setErrors(["Sin conexión con el servidor. Revisá tu internet y probá otra vez."])
       setStatus("idle")
     }
   }

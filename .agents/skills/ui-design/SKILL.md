@@ -48,6 +48,7 @@ Write a 3–6 line design note (in your reply, not a file): pattern, hierarchy, 
 
 - Compose from `components/ui/*`. Add shadcn primitives with `pnpm dlx shadcn@latest add <name>` from `apps/frontend` (style `base-nova`, Base UI) rather than hand-rolling them. Restyle primitives in `components/ui/` when a token-level change is needed, so every screen benefits.
 - Semantic tokens only — no hex/rgb/oklch literals, no arbitrary `[13px]` values in components. New token → `globals.css` + `DESIGN.md`.
+- Write copy last, against DESIGN.md "Voice & copy". For every string ask: would a person say this out loud, does it add something the screen doesn't already show, is it true today? Cut before you add.
 - Keep behaviour and accessibility intact: labels, `role="alert"`/`role="status"`, `aria-label`s and test ids the specs rely on. Run the component tests after restyling (`pnpm --filter frontend test`).
 
 ### 3. Visual loop (mandatory)

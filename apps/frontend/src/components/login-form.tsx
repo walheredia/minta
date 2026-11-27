@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useCredentialsForm } from "@/lib/use-credentials-form"
 
-const GENERIC_ERROR = "No pudimos iniciar sesión. Probá de nuevo."
+const GENERIC_ERROR = "No pudimos iniciar sesión. Probá otra vez."
 
 function extractErrorMessages(body: unknown): string[] {
   const message = (body as { message?: unknown } | null)?.message
@@ -25,7 +25,7 @@ export function LoginForm() {
     useCredentialsForm({
       endpoint: "/api/auth/login",
       extractErrorMessages,
-      networkErrorMessage: "No pudimos conectar con el servidor. Probá de nuevo.",
+      networkErrorMessage: "Sin conexión con el servidor. Revisá tu internet y probá otra vez.",
       onSuccess: () => router.push("/gastos"),
     })
 

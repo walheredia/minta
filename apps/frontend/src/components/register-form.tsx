@@ -19,7 +19,7 @@ function extractErrorMessages(body: unknown): string[] {
     return [message]
   }
 
-  return ["No pudimos crear tu cuenta. Probá de nuevo."]
+  return ["No pudimos crear tu cuenta. Probá otra vez."]
 }
 
 export function RegisterForm() {
@@ -28,7 +28,7 @@ export function RegisterForm() {
     useCredentialsForm({
       endpoint: "/api/auth/register",
       extractErrorMessages,
-      networkErrorMessage: "No pudimos conectar con el servidor. Probá de nuevo.",
+      networkErrorMessage: "Sin conexión con el servidor. Revisá tu internet y probá otra vez.",
       onSuccess: () => setSuccess(true),
     })
 
@@ -42,16 +42,14 @@ export function RegisterForm() {
           <CircleCheck aria-hidden className="size-6" />
         </span>
         <div className="flex flex-col gap-1">
-          <p className="text-base font-semibold text-foreground">Cuenta creada con éxito.</p>
-          <p className="text-sm text-muted-foreground">
-            Ya podés iniciar sesión con tu email y tu contraseña.
-          </p>
+          <p className="text-base font-semibold text-foreground">Cuenta creada.</p>
+          <p className="text-sm text-muted-foreground">Ya podés ingresar con tu email y tu contraseña.</p>
         </div>
         <Link
           href="/ingresar"
           className="text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
-          Ir a ingresar
+          Ingresar
         </Link>
       </div>
     )
