@@ -149,10 +149,10 @@ Rules:
 Used for picking a record from a large server-side set (e.g. "Tipo de gasto").
 
 - Built on the shadcn/Base UI `Combobox` primitive, `h-10`, visible `<Label>`, keyboard-complete (arrows, Enter, Esc) with combobox/listbox roles.
-- **Minimum query**: no popover until 3 characters; a muted helper ("Escribí al menos 3 letras") sits under the field until then. Its line stays reserved (hidden, not removed) so the fields below never jump. Requests are debounced (~250ms) and stale responses ignored.
+- **Minimum query**: no popover until 3 characters; a muted helper ("Escribí al menos 3 letras") sits under the field until then. Its line stays reserved (hidden, not removed) while typing so the fields below don't jump; it collapses once a value is chosen. Requests are debounced (~250ms) and stale responses ignored.
 - **Ordering** (server): exact match first, then prefix matches, then the rest.
-- **Popover**: `bg-popover` surface with hairline ring, width matches the input. Options ≥40px tall on touch (`min-h-10`, `pointer-fine:min-h-8`); the matched substring is semibold. At most 8 options.
-- **Secondary label**: when options come from different sources, the less common one gets a small muted text label to the right (e.g. "de tu Hogar"); the default source gets none.
+- **Popover**: `bg-popover` surface with hairline ring, anchored to the whole field so its width matches the input. Options ≥40px tall on touch (`min-h-10`, `pointer-fine:min-h-8`); the matched substring is semibold. At most 8 options.
+- **Secondary label**: when options come from different sources and the difference matters to the user, the less common one gets a small muted text label to the right; the default source gets none. Don't label a source the user can't see yet (Household Categories stay unlabelled while a Household has a single member; see Voice & copy, "Only claim what's true today").
 - **Create option**: when free-form creation is allowed, the last option (after a hairline separator) is "Crear «texto»" with a `Plus` icon, shown only when no option already has an equivalent name.
 - **States**: loading = 3 skeleton option rows; no results = muted "No encontramos «texto»"; error = inline icon + message + "Reintentar" ghost button; selected = input shows the name plus a clear (×) icon button with `aria-label`.
 - **Validation**: a required combobox left empty reports through the form's `role="alert"` block, marks the field `aria-invalid` and moves focus to it.

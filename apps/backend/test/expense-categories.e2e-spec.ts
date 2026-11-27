@@ -67,6 +67,8 @@ describe('ExpenseCategoriesController (e2e)', () => {
       expect(await search(agent, 'pa')).toEqual([]);
       expect(await search(agent, '  pa  ')).toEqual([]);
       expect(await search(agent, 'pan')).not.toEqual([]);
+      await agent.get('/api/expense-categories').expect(200, []);
+      await agent.get('/api/expense-categories').query('q=pan&q=pana').expect(400);
     });
 
     it('matches System Categories ignoring accents and capitalisation', async () => {

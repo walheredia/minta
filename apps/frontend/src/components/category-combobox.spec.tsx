@@ -120,7 +120,7 @@ describe("CategoryCombobox", () => {
     expect(screen.queryByRole("option", { name: /crear/i })).not.toBeInTheDocument()
   })
 
-  it("marks the categories created in the user's Household", async () => {
+  it("lists the user's Household categories like any other, without a source label", async () => {
     vi.mocked(fetch).mockResolvedValue(
       jsonResponse(200, [{ id: "hh_1", name: "Clases de cerámica", source: "HOUSEHOLD" }])
     )
@@ -128,7 +128,38 @@ describe("CategoryCombobox", () => {
 
     fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "ceram" } })
 
-    expect(await screen.findByRole("option", { name: /clases de cerámica.*de tu hogar/i })).toBeInTheDocument()
+    const option = await screen.findByRole("option", { name: /clases de cerámica/i })
+    expect(option).toHaveTextContent(/^Clases de cerámica$/)
+  })
+
+  it("lets the user pick a suggestion with the keyboard", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse(200, [panaderia, { id: "cat_panales", name: "Pañales", source: "SYSTEM" }])
+    )
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+    const input = screen.getByLabelText("Tipo de gasto")
+
+    fireEvent.change(input, { target: { value: "pana" } })
+    await screen.findByRole("option", { name: /pañales/i })
+    fireEvent.keyDown(input, { key: "ArrowDown" })
+    fireEvent.keyDown(input, { key: "ArrowDown" })
+    fireEvent.keyDown(input, { key: "Enter" })
+
+    expect(onChange).toHaveBeenLastCalledWith({ id: "cat_panales", name: "Pañales", source: "SYSTEM" })
+    expect(input).toHaveValue("Pañales")
+  })
+
+  it("closes the suggestions with Escape", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(200, [panaderia]))
+    render(<Harness />)
+    const input = screen.getByLabelText("Tipo de gasto")
+
+    fireEvent.change(input, { target: { value: "pana" } })
+    await screen.findByRole("option", { name: /panadería/i })
+    fireEvent.keyDown(input, { key: "Escape" })
+
+    await waitFor(() => expect(screen.queryByRole("option")).not.toBeInTheDocument())
   })
 
   it("explains the length limit instead of offering to create a name that is too long", async () => {
