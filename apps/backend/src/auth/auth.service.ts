@@ -85,6 +85,10 @@ export class AuthService {
         data: {
           email: dto.email,
           passwordHash,
+          // Every User belongs to exactly one Household (ADR 0005); created in the same write.
+          householdMemberships: {
+            create: { household: { create: { name: householdNameFor(null) } } },
+          },
         },
         select: {
           id: true,
@@ -149,4 +153,10 @@ export class AuthService {
       user: { id: user.id, email: user.email, name: user.name, createdAt: user.createdAt },
     };
   }
+}
+
+/** Name of the one-person Household auto-created for a User (ADR 0005). */
+export function householdNameFor(userName: string | null): string {
+  const trimmed = userName?.trim();
+  return trimmed ? `Hogar de ${trimmed}` : 'Mi Hogar';
 }

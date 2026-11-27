@@ -5,6 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { PrismaService } from './../src/prisma/prisma.service.js';
+import { deleteTestUsers } from './cleanup.js';
 
 describe('AuthController (e2e)', () => {
   let app: INestApplication<App>;
@@ -28,8 +29,7 @@ describe('AuthController (e2e)', () => {
   }
 
   afterEach(async () => {
-    await prisma.refreshToken.deleteMany({ where: { user: { email: { contains: 'auth-e2e' } } } });
-    await prisma.user.deleteMany({ where: { email: { contains: 'auth-e2e' } } });
+    await deleteTestUsers(prisma, 'auth-e2e');
     await app.close();
   });
 
@@ -49,6 +49,21 @@ describe('AuthController (e2e)', () => {
       });
       expect(created.passwordHash).not.toBe('correct-horse-battery');
       expect(created.passwordHash.startsWith('$argon2id$')).toBe(true);
+    });
+
+    it('creates a one-person Household for the new user', async () => {
+      await request(app.getHttpServer())
+        .post('/api/auth/register')
+        .send({ email: 'auth-e2e-household@example.com', password: 'correct-horse-battery' })
+        .expect(201);
+
+      const memberships = await prisma.householdMember.findMany({
+        where: { user: { email: 'auth-e2e-household@example.com' } },
+        include: { household: { include: { members: true } } },
+      });
+      expect(memberships).toHaveLength(1);
+      expect(memberships[0].household.name).toBe('Mi Hogar');
+      expect(memberships[0].household.members).toHaveLength(1);
     });
 
     it('rejects a duplicate email without creating a second user', async () => {

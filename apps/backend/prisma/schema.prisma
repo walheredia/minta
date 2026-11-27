@@ -31,6 +31,7 @@ model User {
   householdMemberships HouseholdMember[]
   expenses             Expense[]
   refreshTokens        RefreshToken[]
+  createdCategories    HouseholdExpenseCategory[]
 }
 
 model RefreshToken {
@@ -53,8 +54,9 @@ model Household {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members  HouseholdMember[]
-  expenses Expense[]
+  members    HouseholdMember[]
+  expenses   Expense[]
+  categories HouseholdExpenseCategory[]
 }
 
 model HouseholdMember {
@@ -66,14 +68,44 @@ model HouseholdMember {
   household Household @relation(fields: [householdId], references: [id])
   user      User      @relation(fields: [userId], references: [id])
 
-  @@unique([householdId, userId])
+  // A User belongs to exactly one Household (ADR 0005).
+  @@unique([userId])
+  @@index([householdId])
+}
+
+// Predefined Expense Categories available to every Household (ADR 0004).
+// Loaded by the idempotent catalog sync (Prisma seed); never edited through the API.
+model SystemExpenseCategory {
+  id            String @id @default(cuid())
+  name          String @db.VarChar(40)
+  normalizedKey String @unique @db.VarChar(40)
+  groupName     String @db.VarChar(40)
+
+  expenses Expense[]
+}
+
+// Expense Categories created by a Household's members, visible only to that
+// Household (ADR 0004). No two may share a normalized key within a Household.
+model HouseholdExpenseCategory {
+  id              String   @id @default(cuid())
+  householdId     String
+  name            String   @db.VarChar(40)
+  normalizedKey   String   @db.VarChar(40)
+  createdByUserId String
+  createdAt       DateTime @default(now())
+
+  household Household @relation(fields: [householdId], references: [id])
+  createdBy User      @relation(fields: [createdByUserId], references: [id])
+  expenses  Expense[]
+
+  @@unique([householdId, normalizedKey])
 }
 
 model Expense {
   id          String            @id @default(cuid())
   amount      Decimal           @db.Decimal(12, 2)
   currency    Currency
-  description String
+  detail      String?           @db.VarChar(200)
   occurredAt  DateTime
   visibility  ExpenseVisibility @default(PERSONAL)
   createdAt   DateTime          @default(now())
@@ -82,8 +114,15 @@ model Expense {
   userId      String
   householdId String?
 
-  user      User       @relation(fields: [userId], references: [id])
-  household Household? @relation(fields: [householdId], references: [id])
+  // Exactly one of these is set (CHECK constraint in the migration, ADR 0004).
+  // MySQL forbids referential actions on columns used in a CHECK, hence Restrict.
+  systemCategoryId    String?
+  householdCategoryId String?
+
+  user              User                      @relation(fields: [userId], references: [id])
+  household         Household?                @relation(fields: [householdId], references: [id])
+  systemCategory    SystemExpenseCategory?    @relation(fields: [systemCategoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  householdCategory HouseholdExpenseCategory? @relation(fields: [householdCategoryId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@index([userId, occurredAt])
   @@index([householdId, occurredAt])

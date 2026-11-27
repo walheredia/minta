@@ -1,10 +1,38 @@
 export type Currency = "ARS" | "USD"
 
+/** Shown when an Expense is saved without an Expense Category. */
+export const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
+
+/** Maximum length of an Expense's Detail (mirrors the backend). */
+export const DETAIL_MAX_LENGTH = 200
+
+export type CategorySource = "SYSTEM" | "HOUSEHOLD"
+
+/** An Expense Category ("Tipo de gasto") as returned by the API. */
+export interface ExpenseCategory {
+  id: string
+  name: string
+  source: CategorySource
+}
+
+/** A category the user typed that doesn't exist yet; created when the Expense is saved. */
+export interface NewCategory {
+  source: "NEW"
+  name: string
+}
+
+/** What the category picker yields: an existing category or a new one to create. */
+export type CategoryChoice = ExpenseCategory | NewCategory
+
+/** Reference to the category an Expense is classified under, as sent to the API. */
+export type CategoryRef = Pick<ExpenseCategory, "id" | "source"> | NewCategory
+
 export interface Expense {
   id: string
   amount: string
   currency: Currency
-  description: string
+  category: ExpenseCategory
+  detail: string | null
   occurredAt: string
   createdAt: string
   updatedAt: string
@@ -15,8 +43,20 @@ export interface Expense {
 export interface ExpenseInput {
   amount: string
   currency: Currency
-  description: string
+  category: CategoryRef
+  detail: string | null
   occurredAt: string
+}
+
+/** The category reference to send for a picked category. */
+export function toCategoryRef(choice: CategoryChoice): CategoryRef {
+  return choice.source === "NEW" ? choice : { source: choice.source, id: choice.id }
+}
+
+/** Trims the Detail; blank becomes null. */
+export function toDetail(raw: string): string | null {
+  const trimmed = raw.trim()
+  return trimmed === "" ? null : trimmed
 }
 
 const CURRENCY_FORMATTERS: Record<Currency, Intl.NumberFormat> = {
