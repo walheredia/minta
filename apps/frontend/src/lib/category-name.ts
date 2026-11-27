@@ -4,6 +4,13 @@
  * the source of truth for uniqueness.
  */
 export const CATEGORY_SEARCH_MIN_LENGTH = 3
+export const CATEGORY_NAME_MAX_LENGTH = 40
+
+/** Name as stored: trimmed, inner whitespace collapsed, first letter upper-cased. */
+export function toCategoryDisplayName(raw: string): string {
+  const collapsed = raw.trim().replace(/\s+/g, " ")
+  return collapsed.charAt(0).toLocaleUpperCase("es-AR") + collapsed.slice(1)
+}
 
 function foldChar(char: string): string {
   return char.normalize("NFD").replace(/\p{M}/gu, "").toLocaleLowerCase("es-AR")

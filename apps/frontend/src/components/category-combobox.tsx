@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { CircleAlert } from "lucide-react"
+import { CircleAlert, Plus } from "lucide-react"
 import {
   Combobox,
   ComboboxContent,
@@ -12,8 +12,14 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { apiFetch } from "@/lib/api-client"
-import { CATEGORY_SEARCH_MIN_LENGTH, normalizeCategoryKey, splitOnMatch } from "@/lib/category-name"
-import type { ExpenseCategory } from "@/lib/expenses"
+import {
+  CATEGORY_NAME_MAX_LENGTH,
+  CATEGORY_SEARCH_MIN_LENGTH,
+  normalizeCategoryKey,
+  splitOnMatch,
+  toCategoryDisplayName,
+} from "@/lib/category-name"
+import type { CategoryChoice, ExpenseCategory } from "@/lib/expenses"
 
 const SEARCH_DEBOUNCE_MS = 250
 
@@ -28,20 +34,24 @@ interface SearchResult {
 
 interface CategoryComboboxProps {
   id: string
-  value: ExpenseCategory | null
-  onChange: (value: ExpenseCategory | null) => void
+  value: CategoryChoice | null
+  onChange: (value: CategoryChoice | null) => void
   invalid?: boolean
   inputRef?: React.Ref<HTMLInputElement>
 }
 
-function sameCategory(a: ExpenseCategory, b: ExpenseCategory) {
-  return a.id === b.id && a.source === b.source
+function choiceKey(choice: CategoryChoice): string {
+  return choice.source === "NEW" ? `NEW:${normalizeCategoryKey(choice.name)}` : `${choice.source}:${choice.id}`
+}
+
+function sameChoice(a: CategoryChoice, b: CategoryChoice) {
+  return choiceKey(a) === choiceKey(b)
 }
 
 function HighlightedName({ name, query }: { name: string; query: string }) {
   const [before, match, after] = splitOnMatch(name, query)
   return (
-    <span className="truncate">
+    <span className="min-w-0 flex-1 truncate">
       {before}
       {match && <span className="font-semibold">{match}</span>}
       {after}
@@ -52,7 +62,8 @@ function HighlightedName({ name, query }: { name: string; query: string }) {
 /**
  * Search-as-you-type picker for an Expense Category ("Tipo de gasto").
  * Searches the server after {@link CATEGORY_SEARCH_MIN_LENGTH} characters,
- * debounced, ignoring stale responses. See DESIGN.md "Search-as-you-type".
+ * debounced, ignoring stale responses, and offers "Crear «X»" when no
+ * equivalent category exists. See DESIGN.md "Search-as-you-type".
  */
 export function CategoryCombobox({ id, value, onChange, invalid = false, inputRef }: CategoryComboboxProps) {
   const [inputValue, setInputValue] = useState(value?.name ?? "")
@@ -69,7 +80,8 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
   }
 
   const query = inputValue.trim()
-  const searchable = normalizeCategoryKey(query).length >= CATEGORY_SEARCH_MIN_LENGTH
+  const queryKey = normalizeCategoryKey(query)
+  const searchable = queryKey.length >= CATEGORY_SEARCH_MIN_LENGTH
   const showingSelection = value !== null && inputValue === value.name
   const shouldSearch = searchable && !showingSelection
   const requestKey = `${retryToken}:${query}`
@@ -80,7 +92,7 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
       ? result.status
       : "loading"
 
-  function emit(next: ExpenseCategory | null) {
+  function emit(next: CategoryChoice | null) {
     setSyncedValue(next)
     onChange(next)
   }
@@ -106,12 +118,18 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
   }, [shouldSearch, query, requestKey])
 
   const results = status === "ready" && result ? result.items : []
-  const items = results
+  const settled = status === "ready" || status === "error"
+  const newName = toCategoryDisplayName(query)
+  const tooLong = newName.length > CATEGORY_NAME_MAX_LENGTH
+  const hasEquivalent = results.some((category) => normalizeCategoryKey(category.name) === queryKey)
+  const createOption: CategoryChoice | null =
+    settled && !tooLong && !hasEquivalent ? { source: "NEW", name: newName } : null
+  const items: CategoryChoice[] = createOption ? [...results, createOption] : results
   const helperId = `${id}-helper`
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Combobox<ExpenseCategory>
+      <Combobox<CategoryChoice>
         items={items}
         filter={null}
         value={value}
@@ -122,10 +140,10 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
           if (details.reason === "input-change") setOpen(true)
           if (value && next !== value.name) emit(null)
         }}
-        open={open && searchable && !showingSelection}
+        open={open && shouldSearch}
         onOpenChange={setOpen}
-        itemToStringLabel={(category) => category.name}
-        isItemEqualToValue={sameCategory}
+        itemToStringLabel={(choice) => choice.name}
+        isItemEqualToValue={sameChoice}
       >
         <ComboboxInput
           id={id}
@@ -150,7 +168,7 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
           )}
 
           {status === "error" && (
-            <div className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm text-destructive">
+            <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm text-destructive">
               <span className="flex items-center gap-2">
                 <CircleAlert aria-hidden className="size-4 shrink-0" />
                 No pudimos cargar los tipos de gasto.
@@ -161,20 +179,42 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
             </div>
           )}
 
-          {status === "ready" && results.length === 0 && (
-            <p className="px-3 py-2.5 text-sm text-muted-foreground">No encontramos «{query}»</p>
+          {status === "ready" && results.length === 0 && !tooLong && (
+            <p className="px-3 pt-2.5 pb-1 text-sm wrap-anywhere text-muted-foreground">
+              No encontramos «{query}»
+            </p>
+          )}
+
+          {settled && tooLong && (
+            <p className="px-3 py-2.5 text-sm text-muted-foreground">
+              Máximo {CATEGORY_NAME_MAX_LENGTH} caracteres.
+            </p>
           )}
 
           <ComboboxList>
-            {(category: ExpenseCategory) => (
-              <ComboboxItem
-                key={`${category.source}:${category.id}`}
-                value={category}
-                className="min-h-10 py-2 pointer-fine:min-h-8 pointer-fine:py-1.5"
-              >
-                <HighlightedName name={category.name} query={query} />
-              </ComboboxItem>
-            )}
+            {(choice: CategoryChoice) =>
+              choice.source === "NEW" ? (
+                <ComboboxItem
+                  key={choiceKey(choice)}
+                  value={choice}
+                  className="min-h-10 py-2 pointer-fine:min-h-8 pointer-fine:py-1.5 not-first:mt-1.5 not-first:before:absolute not-first:before:inset-x-0 not-first:before:-top-1 not-first:before:h-px not-first:before:bg-border"
+                >
+                  <Plus aria-hidden className="text-muted-foreground" />
+                  <span className="min-w-0 flex-1 truncate">Crear «{choice.name}»</span>
+                </ComboboxItem>
+              ) : (
+                <ComboboxItem
+                  key={choiceKey(choice)}
+                  value={choice}
+                  className="min-h-10 py-2 pointer-fine:min-h-8 pointer-fine:py-1.5"
+                >
+                  <HighlightedName name={choice.name} query={query} />
+                  {choice.source === "HOUSEHOLD" && (
+                    <span className="shrink-0 text-xs text-muted-foreground">de tu Hogar</span>
+                  )}
+                </ComboboxItem>
+              )
+            }
           </ComboboxList>
         </ComboboxContent>
       </Combobox>

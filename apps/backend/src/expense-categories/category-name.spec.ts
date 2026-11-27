@@ -1,4 +1,7 @@
-import { normalizeCategoryKey, toCategoryDisplayName } from './category-name.js';
+import {
+  normalizeCategoryKey,
+  toCategoryDisplayName,
+} from './category-name.js';
 
 describe('normalizeCategoryKey', () => {
   it.each([

@@ -13,6 +13,8 @@ export async function deleteTestUsers(prisma: PrismaService, emailFragment: stri
   const householdIds = households.map((household) => household.id);
 
   await prisma.expense.deleteMany({ where: { user: userWhere } });
+  await prisma.expense.deleteMany({ where: { householdCategory: { householdId: { in: householdIds } } } });
+  await prisma.householdExpenseCategory.deleteMany({ where: { householdId: { in: householdIds } } });
   await prisma.refreshToken.deleteMany({ where: { user: userWhere } });
   await prisma.householdMember.deleteMany({ where: { householdId: { in: householdIds } } });
   await prisma.household.deleteMany({ where: { id: { in: householdIds } } });

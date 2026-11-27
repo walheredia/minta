@@ -141,7 +141,13 @@ export const SYSTEM_CATEGORY_CATALOG: Record<string, readonly string[]> = {
     'Cumpleaños infantiles',
     'Actividades extracurriculares',
   ],
-  Mascotas: ['Veterinaria', 'Alimento para mascotas', 'Pet shop', 'Peluquería canina', 'Paseador'],
+  Mascotas: [
+    'Veterinaria',
+    'Alimento para mascotas',
+    'Pet shop',
+    'Peluquería canina',
+    'Paseador',
+  ],
   'Suscripciones y streaming': [
     'Netflix',
     'Spotify',
@@ -168,7 +174,14 @@ export const SYSTEM_CATEGORY_CATALOG: Record<string, readonly string[]> = {
     'Boliche',
     'Hobbies',
   ],
-  Deporte: ['Gimnasio', 'Club', 'Fútbol (cancha)', 'Pádel/Tenis', 'Natación', 'Equipamiento deportivo'],
+  Deporte: [
+    'Gimnasio',
+    'Club',
+    'Fútbol (cancha)',
+    'Pádel/Tenis',
+    'Natación',
+    'Equipamiento deportivo',
+  ],
   Tecnología: [
     'Electrónica',
     'Computación',
@@ -196,7 +209,13 @@ export const SYSTEM_CATEGORY_CATALOG: Record<string, readonly string[]> = {
     'Seguro de vida',
     'Contador',
   ],
-  'Regalos y social': ['Regalos', 'Cumpleaños', 'Casamientos/Eventos', 'Donaciones', 'Cuota social/Club'],
+  'Regalos y social': [
+    'Regalos',
+    'Cumpleaños',
+    'Casamientos/Eventos',
+    'Donaciones',
+    'Cuota social/Club',
+  ],
   Trabajo: ['Coworking', 'Insumos de oficina', 'Comida de trabajo'],
   Otros: [
     'Otros',

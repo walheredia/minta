@@ -17,7 +17,9 @@ function catalogEntries(): CatalogEntry[] {
       const normalizedKey = normalizeCategoryKey(name);
       const clash = seen.get(normalizedKey);
       if (clash) {
-        throw new Error(`System Category catalog: "${name}" collides with "${clash}" (key "${normalizedKey}").`);
+        throw new Error(
+          `System Category catalog: "${name}" collides with "${clash}" (key "${normalizedKey}").`,
+        );
       }
       seen.set(normalizedKey, name);
       entries.push({ name, normalizedKey, groupName });
@@ -32,15 +34,24 @@ function catalogEntries(): CatalogEntry[] {
  * creates missing categories and updates renamed/regrouped ones, matching by
  * normalized key. Never deletes (Expenses may reference retired names).
  */
-export async function syncSystemCategories(prisma: PrismaClient): Promise<void> {
+export async function syncSystemCategories(
+  prisma: PrismaClient,
+): Promise<void> {
   const entries = catalogEntries();
   const existing = await prisma.systemExpenseCategory.findMany();
-  const existingByKey = new Map(existing.map((category) => [category.normalizedKey, category]));
+  const existingByKey = new Map(
+    existing.map((category) => [category.normalizedKey, category]),
+  );
 
-  const missing = entries.filter((entry) => !existingByKey.has(entry.normalizedKey));
+  const missing = entries.filter(
+    (entry) => !existingByKey.has(entry.normalizedKey),
+  );
   const changed = entries.filter((entry) => {
     const current = existingByKey.get(entry.normalizedKey);
-    return current && (current.name !== entry.name || current.groupName !== entry.groupName);
+    return (
+      current &&
+      (current.name !== entry.name || current.groupName !== entry.groupName)
+    );
   });
 
   await prisma.$transaction(async (tx) => {

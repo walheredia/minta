@@ -135,4 +135,23 @@ describe("ExpenseForm", () => {
     expect(fetch).toHaveBeenCalledTimes(4)
     expect(fetch).toHaveBeenNthCalledWith(3, "/api/auth/refresh", expect.objectContaining({ method: "POST" }))
   })
+
+  it("creates the expense with a brand-new category typed by the user", async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(jsonResponse(200, [])) // category search
+      .mockResolvedValueOnce(jsonResponse(201, created)) // POST /api/expenses
+
+    render(<ExpenseForm />)
+
+    fireEvent.change(screen.getByLabelText(/monto/i), { target: { value: "100" } })
+    await pickCategory("clases de cerámica", /crear «clases de cerámica»/i)
+    fireEvent.change(screen.getByLabelText(/fecha/i), { target: { value: "2026-01-10" } })
+    fireEvent.click(screen.getByRole("button", { name: /cargar gasto/i }))
+
+    await waitFor(() => expect(expensePosts()).toHaveLength(1))
+    expect(JSON.parse(String(expensePosts()[0][1]!.body)).category).toEqual({
+      source: "NEW",
+      name: "Clases de cerámica",
+    })
+  })
 })

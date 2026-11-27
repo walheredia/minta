@@ -2,7 +2,7 @@ import { useState } from "react"
 import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { CategoryCombobox } from "./category-combobox"
-import type { ExpenseCategory } from "@/lib/expenses"
+import type { CategoryChoice, ExpenseCategory } from "@/lib/expenses"
 
 function jsonResponse(status: number, body: unknown) {
   return { ok: status >= 200 && status < 300, status, json: async () => body } as Response
@@ -10,8 +10,8 @@ function jsonResponse(status: number, body: unknown) {
 
 const panaderia: ExpenseCategory = { id: "cat_pan", name: "Panadería", source: "SYSTEM" }
 
-function Harness({ onChange }: { onChange?: (value: ExpenseCategory | null) => void }) {
-  const [value, setValue] = useState<ExpenseCategory | null>(null)
+function Harness({ onChange }: { onChange?: (value: CategoryChoice | null) => void }) {
+  const [value, setValue] = useState<CategoryChoice | null>(null)
   return (
     <>
       <label htmlFor="category">Tipo de gasto</label>
@@ -96,5 +96,57 @@ describe("CategoryCombobox", () => {
     await screen.findByRole("option", { name: /panadería/i })
     await waitFor(() => expect(searchCalls()).toHaveLength(1))
     expect(searchCalls()[0][0]).toBe("/api/expense-categories?q=panad")
+  })
+
+  it("offers to create the typed category when nothing equivalent exists", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(200, []))
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+
+    fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "  clases de cerámica" } })
+    fireEvent.click(await screen.findByRole("option", { name: "Crear «Clases de cerámica»" }))
+
+    expect(onChange).toHaveBeenLastCalledWith({ source: "NEW", name: "Clases de cerámica" })
+    expect(screen.getByLabelText("Tipo de gasto")).toHaveValue("Clases de cerámica")
+  })
+
+  it("does not offer to create a category that already exists under another spelling", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(200, [panaderia]))
+    render(<Harness />)
+
+    fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "PANADERIA" } })
+
+    expect(await screen.findByRole("option", { name: /panadería/i })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /crear/i })).not.toBeInTheDocument()
+  })
+
+  it("marks the categories created in the user's Household", async () => {
+    vi.mocked(fetch).mockResolvedValue(
+      jsonResponse(200, [{ id: "hh_1", name: "Clases de cerámica", source: "HOUSEHOLD" }])
+    )
+    render(<Harness />)
+
+    fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "ceram" } })
+
+    expect(await screen.findByRole("option", { name: /clases de cerámica.*de tu hogar/i })).toBeInTheDocument()
+  })
+
+  it("explains the length limit instead of offering to create a name that is too long", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(200, []))
+    render(<Harness />)
+
+    fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "x".repeat(41) } })
+
+    expect(await screen.findByText("Máximo 40 caracteres.")).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /crear/i })).not.toBeInTheDocument()
+  })
+
+  it("still lets the user create a category when suggestions fail to load", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(500, {}))
+    render(<Harness />)
+
+    fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "ceramica" } })
+
+    expect(await screen.findByRole("option", { name: "Crear «Ceramica»" })).toBeInTheDocument()
   })
 })

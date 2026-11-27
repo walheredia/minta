@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { apiFetch } from "@/lib/api-client"
 import { toCategoryRef, toDetail } from "@/lib/expenses"
-import type { Currency, Expense, ExpenseCategory } from "@/lib/expenses"
+import type { CategoryChoice, Currency, Expense } from "@/lib/expenses"
 
 type Status = "idle" | "submitting"
 
@@ -40,7 +40,7 @@ interface ExpenseFormProps {
 export function ExpenseForm({ onCreated }: ExpenseFormProps) {
   const [amount, setAmount] = useState("")
   const [currency, setCurrency] = useState<Currency>("ARS")
-  const [category, setCategory] = useState<ExpenseCategory | null>(null)
+  const [category, setCategory] = useState<CategoryChoice | null>(null)
   const [detail, setDetail] = useState("")
   const categoryInputRef = useRef<HTMLInputElement>(null)
   const [occurredAt, setOccurredAt] = useState(todayIsoDate)

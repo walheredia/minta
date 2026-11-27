@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatAmount, toCategoryRef, toDetail, totalsByCurrency } from "@/lib/expenses"
-import type { Currency, Expense, ExpenseCategory, ExpenseInput } from "@/lib/expenses"
+import type { CategoryChoice, Currency, Expense, ExpenseInput } from "@/lib/expenses"
 
 const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
 
@@ -41,7 +41,7 @@ interface EditExpenseFormProps {
 function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
   const [amount, setAmount] = useState(expense.amount)
   const [currency, setCurrency] = useState<Currency>(expense.currency)
-  const [category, setCategory] = useState<ExpenseCategory | null>(expense.category)
+  const [category, setCategory] = useState<CategoryChoice | null>(expense.category)
   const [detail, setDetail] = useState(expense.detail ?? "")
   const categoryInputRef = useRef<HTMLInputElement>(null)
   const [occurredAt, setOccurredAt] = useState(toDateInputValue(expense.occurredAt))
