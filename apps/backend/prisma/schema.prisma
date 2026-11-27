@@ -71,11 +71,22 @@ model HouseholdMember {
   @@index([householdId])
 }
 
+// Predefined Expense Categories available to every Household (ADR 0004).
+// Loaded by the idempotent catalog sync (Prisma seed); never edited through the API.
+model SystemExpenseCategory {
+  id            String @id @default(cuid())
+  name          String @db.VarChar(40)
+  normalizedKey String @unique @db.VarChar(40)
+  groupName     String @db.VarChar(40)
+
+  expenses Expense[]
+}
+
 model Expense {
   id          String            @id @default(cuid())
   amount      Decimal           @db.Decimal(12, 2)
   currency    Currency
-  description String
+  detail      String?           @db.VarChar(200)
   occurredAt  DateTime
   visibility  ExpenseVisibility @default(PERSONAL)
   createdAt   DateTime          @default(now())
@@ -84,8 +95,11 @@ model Expense {
   userId      String
   householdId String?
 
-  user      User       @relation(fields: [userId], references: [id])
-  household Household? @relation(fields: [householdId], references: [id])
+  systemCategoryId String
+
+  user           User                  @relation(fields: [userId], references: [id])
+  household      Household?            @relation(fields: [householdId], references: [id])
+  systemCategory SystemExpenseCategory @relation(fields: [systemCategoryId], references: [id])
 
   @@index([userId, occurredAt])
   @@index([householdId, occurredAt])

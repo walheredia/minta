@@ -6,8 +6,9 @@
 
 **Status:** ready-for-agent
 
-- [ ] Name normalization module (display name: trimmed, whitespace collapsed, first letter upper-cased, 1–40 characters; normalized key: lowercase, no diacritics) with table-driven unit tests
 - [ ] Household Category table, unique on (household, normalized key), records createdByUserId
+- [ ] Expense gains a nullable `householdCategoryId`; `systemCategoryId` becomes nullable; a DB CHECK enforces exactly one is set
+- [ ] Names are validated to 1–40 characters (normalization module already exists from 02)
 - [ ] Expense create/update accept `{ source: "NEW", name }` (created in the same transaction, or reused when an equivalent System or Household Category exists) and `{ source: "HOUSEHOLD", id }`
 - [ ] A Household Category id from another Household yields 400 "Tipo de gasto inválido."; search never returns another Household's categories (e2e with two Users)
 - [ ] Search ordering: prefix first, then Household usage count, then alphabetical

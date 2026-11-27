@@ -1,7 +1,23 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateExpenseDto } from './create-expense.schema.js';
+import type { CategoryRef } from './expense-fields.schema.js';
 import { UpdateExpenseDto } from './update-expense.schema.js';
+
+const INVALID_CATEGORY_MESSAGE = 'Tipo de gasto inválido.';
+
+const expenseWithCategory = {
+  include: { systemCategory: { select: { id: true, name: true } } },
+} satisfies Prisma.ExpenseDefaultArgs;
+
+type ExpenseWithCategory = Prisma.ExpenseGetPayload<typeof expenseWithCategory>;
+
+/** API shape of an Expense: the category is embedded, FK columns are not exposed. */
+function toExpenseResponse(expense: ExpenseWithCategory) {
+  const { systemCategory, systemCategoryId: _systemCategoryId, ...rest } = expense;
+  return { ...rest, category: { ...systemCategory, source: 'SYSTEM' as const } };
+}
 
 /**
  * All expenses created and listed through this service are forced to
@@ -13,25 +29,52 @@ import { UpdateExpenseDto } from './update-expense.schema.js';
 export class ExpensesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  create(userId: string, dto: CreateExpenseDto) {
-    return this.prisma.expense.create({
+  /**
+   * Resolves a category reference to the FK columns to store. Any reference
+   * the User cannot use yields the same generic 400, so nothing is revealed
+   * about categories outside their reach.
+   */
+  private async resolveCategory(ref: CategoryRef) {
+    const category = await this.prisma.systemExpenseCategory.findUnique({
+      where: { id: ref.id },
+      select: { id: true },
+    });
+
+    if (!category) {
+      throw new BadRequestException(INVALID_CATEGORY_MESSAGE);
+    }
+
+    return { systemCategoryId: category.id };
+  }
+
+  async create(userId: string, dto: CreateExpenseDto) {
+    const categoryColumns = await this.resolveCategory(dto.category);
+
+    const expense = await this.prisma.expense.create({
       data: {
         amount: dto.amount,
         currency: dto.currency,
-        description: dto.description,
+        detail: dto.detail ?? null,
         occurredAt: dto.occurredAt,
         visibility: 'PERSONAL',
         householdId: null,
         userId,
+        ...categoryColumns,
       },
+      ...expenseWithCategory,
     });
+
+    return toExpenseResponse(expense);
   }
 
-  findAllForUser(userId: string) {
-    return this.prisma.expense.findMany({
+  async findAllForUser(userId: string) {
+    const expenses = await this.prisma.expense.findMany({
       where: { userId, visibility: 'PERSONAL' },
       orderBy: { occurredAt: 'desc' },
+      ...expenseWithCategory,
     });
+
+    return expenses.map(toExpenseResponse);
   }
 
   /**
@@ -53,16 +96,21 @@ export class ExpensesService {
 
   async update(userId: string, id: string, dto: UpdateExpenseDto) {
     await this.findOwnedOrThrow(userId, id);
+    const categoryColumns = dto.category ? await this.resolveCategory(dto.category) : {};
 
-    return this.prisma.expense.update({
+    const expense = await this.prisma.expense.update({
       where: { id },
       data: {
         amount: dto.amount,
         currency: dto.currency,
-        description: dto.description,
+        detail: dto.detail,
         occurredAt: dto.occurredAt,
+        ...categoryColumns,
       },
+      ...expenseWithCategory,
     });
+
+    return toExpenseResponse(expense);
   }
 
   async remove(userId: string, id: string) {

@@ -114,6 +114,18 @@ Rules:
 - Edit happens inline in the row (fields on one line from `sm`); the add form lives beside the list on desktop (sticky right column) and above it on mobile.
 - Destructive actions confirm inline or in a dialog; the confirm button uses `variant="destructive"`.
 
+### Search-as-you-type (combobox)
+
+Used for picking a record from a large server-side set (e.g. "Tipo de gasto").
+
+- Built on the shadcn/Base UI `Combobox` primitive, `h-10`, visible `<Label>`, keyboard-complete (arrows, Enter, Esc) with combobox/listbox roles.
+- **Minimum query**: no popover until 3 characters; a muted helper ("Escribí al menos 3 letras") sits under the field until then. Requests are debounced (~250ms) and stale responses ignored.
+- **Popover**: `bg-popover` surface with hairline ring, width matches the input. Options ≥40px tall on touch (`min-h-10`, `pointer-fine:min-h-8`); the matched substring is semibold. At most 8 options.
+- **Secondary label**: when options come from different sources, the less common one gets a small muted text label to the right (e.g. "de tu Hogar"); the default source gets none.
+- **Create option**: when free-form creation is allowed, the last option (after a hairline separator) is "Crear «texto»" with a `Plus` icon, shown only when no option already has an equivalent name.
+- **States**: loading = 3 skeleton option rows; no results = muted "No encontramos «texto»"; error = inline icon + message + "Reintentar" ghost button; selected = input shows the name plus a clear (×) icon button with `aria-label`.
+- **Validation**: a required combobox left empty reports through the form's `role="alert"` block, marks the field `aria-invalid` and moves focus to it.
+
 ### States (every data view must design all of them)
 
 - **Loading**: skeletons that match the final layout. No bare spinners for page-level loads.

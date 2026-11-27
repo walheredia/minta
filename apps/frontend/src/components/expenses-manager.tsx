@@ -109,7 +109,7 @@ export function ExpensesManager() {
           <Card className="shadow-xs dark:shadow-none">
             <CardHeader>
               <CardTitle className="font-semibold">Cargar un gasto</CardTitle>
-              <CardDescription>Monto, moneda, descripción y fecha.</CardDescription>
+              <CardDescription>Monto, moneda, tipo de gasto y fecha.</CardDescription>
             </CardHeader>
             <CardContent>
               <ExpenseForm onCreated={handleCreated} />

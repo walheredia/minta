@@ -1,15 +1,18 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useRef, useState, type FormEvent } from "react"
 import { CircleAlert, Pencil, ReceiptText, Trash2 } from "lucide-react"
+import { CategoryCombobox } from "@/components/category-combobox"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatAmount, totalsByCurrency } from "@/lib/expenses"
-import type { Currency, Expense, ExpenseInput } from "@/lib/expenses"
+import { formatAmount, toCategoryRef, toDetail, totalsByCurrency } from "@/lib/expenses"
+import type { Currency, Expense, ExpenseCategory, ExpenseInput } from "@/lib/expenses"
+
+const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -38,18 +41,33 @@ interface EditExpenseFormProps {
 function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
   const [amount, setAmount] = useState(expense.amount)
   const [currency, setCurrency] = useState<Currency>(expense.currency)
-  const [description, setDescription] = useState(expense.description)
+  const [category, setCategory] = useState<ExpenseCategory | null>(expense.category)
+  const [detail, setDetail] = useState(expense.detail ?? "")
+  const categoryInputRef = useRef<HTMLInputElement>(null)
   const [occurredAt, setOccurredAt] = useState(toDateInputValue(expense.occurredAt))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!category) {
+      setError(MISSING_CATEGORY_MESSAGE)
+      categoryInputRef.current?.focus()
+      return
+    }
+
     setSaving(true)
     setError(null)
 
     try {
-      await onSave({ amount, currency, description, occurredAt })
+      await onSave({
+        amount,
+        currency,
+        category: toCategoryRef(category),
+        detail: toDetail(detail),
+        occurredAt,
+      })
     } catch {
       setError("No pudimos guardar los cambios. Probá de nuevo.")
       setSaving(false)
@@ -61,7 +79,7 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
       noValidate
       onSubmit={handleSubmit}
       aria-label="Editar gasto"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.5rem_minmax(0,1.4fr)_10rem]"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.5rem_10rem]"
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`edit-amount-${expense.id}`}>Monto</Label>
@@ -90,16 +108,6 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
         </Select>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`edit-description-${expense.id}`}>Descripción</Label>
-        <Input
-          id={`edit-description-${expense.id}`}
-          name="description"
-          type="text"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
-        />
-      </div>
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`edit-occurred-at-${expense.id}`}>Fecha</Label>
@@ -109,6 +117,35 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
           type="date"
           value={occurredAt}
           onChange={(event) => setOccurredAt(event.target.value)}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`edit-category-${expense.id}`}>Tipo de gasto</Label>
+        <CategoryCombobox
+          id={`edit-category-${expense.id}`}
+          value={category}
+          onChange={(next) => {
+            setCategory(next)
+            if (next && error === MISSING_CATEGORY_MESSAGE) setError(null)
+          }}
+          invalid={error === MISSING_CATEGORY_MESSAGE}
+          inputRef={categoryInputRef}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5 sm:col-span-2">
+        <Label htmlFor={`edit-detail-${expense.id}`}>
+          Detalle <span className="font-normal text-muted-foreground">(opcional)</span>
+        </Label>
+        <Input
+          id={`edit-detail-${expense.id}`}
+          name="detail"
+          type="text"
+          maxLength={200}
+          placeholder="Ej.: facturas para el domingo"
+          value={detail}
+          onChange={(event) => setDetail(event.target.value)}
         />
       </div>
 
@@ -284,15 +321,23 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate, loading
                   <div className="flex flex-col gap-3 px-5 py-3.5 transition-colors hover:bg-muted/40">
                     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                       <span className="col-start-1 row-start-1 truncate text-sm font-medium text-foreground">
-                        {expense.description}
+                        {expense.category.name}
                       </span>
-                      <span className="col-start-1 row-start-2 text-xs whitespace-nowrap text-muted-foreground tabular-nums">
-                        {new Date(expense.occurredAt).toLocaleDateString("es-AR", {
-                          timeZone: "UTC",
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                      <span className="col-start-1 row-start-2 flex min-w-0 items-baseline gap-1.5 text-xs text-muted-foreground">
+                        {expense.detail && (
+                          <>
+                            <span className="truncate">{expense.detail}</span>
+                            <span aria-hidden>·</span>
+                          </>
+                        )}
+                        <span className="shrink-0 whitespace-nowrap tabular-nums">
+                          {new Date(expense.occurredAt).toLocaleDateString("es-AR", {
+                            timeZone: "UTC",
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </span>
                       </span>
                       <div className="col-start-2 row-start-1 flex items-center justify-self-end gap-2 sm:row-span-2 sm:gap-3">
                         <span className="text-sm font-semibold whitespace-nowrap text-foreground tabular-nums">
@@ -307,7 +352,7 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate, loading
                             variant="ghost"
                             size="icon"
                             className="max-sm:-my-1.5 max-sm:size-10"
-                            aria-label={`Editar ${expense.description}`}
+                            aria-label={`Editar ${expense.category.name}`}
                             onClick={() => setEditingId(expense.id)}
                           >
                             <Pencil />
@@ -317,7 +362,7 @@ export function ExpenseList({ expenses, onEdit, onDelete, referenceDate, loading
                             variant="ghost"
                             size="icon"
                             className="hover:bg-destructive/10 hover:text-destructive max-sm:-my-1.5 max-sm:size-10"
-                            aria-label={`Eliminar ${expense.description}`}
+                            aria-label={`Eliminar ${expense.category.name}`}
                             onClick={() => {
                               setConfirmingDeleteId(expense.id)
                               setDeleteError(null)

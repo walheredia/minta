@@ -1,15 +1,19 @@
 "use client"
 
-import { useState, type FormEvent } from "react"
+import { useRef, useState, type FormEvent } from "react"
 import { CircleAlert } from "lucide-react"
+import { CategoryCombobox } from "@/components/category-combobox"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { apiFetch } from "@/lib/api-client"
-import type { Currency, Expense } from "@/lib/expenses"
+import { toCategoryRef, toDetail } from "@/lib/expenses"
+import type { Currency, Expense, ExpenseCategory } from "@/lib/expenses"
 
 type Status = "idle" | "submitting"
+
+const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10)
@@ -36,13 +40,22 @@ interface ExpenseFormProps {
 export function ExpenseForm({ onCreated }: ExpenseFormProps) {
   const [amount, setAmount] = useState("")
   const [currency, setCurrency] = useState<Currency>("ARS")
-  const [description, setDescription] = useState("")
+  const [category, setCategory] = useState<ExpenseCategory | null>(null)
+  const [detail, setDetail] = useState("")
+  const categoryInputRef = useRef<HTMLInputElement>(null)
   const [occurredAt, setOccurredAt] = useState(todayIsoDate)
   const [errors, setErrors] = useState<string[]>([])
   const [status, setStatus] = useState<Status>("idle")
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+
+    if (!category) {
+      setErrors([MISSING_CATEGORY_MESSAGE])
+      categoryInputRef.current?.focus()
+      return
+    }
+
     setStatus("submitting")
     setErrors([])
 
@@ -50,7 +63,13 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       const response = await apiFetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount, currency, description, occurredAt }),
+        body: JSON.stringify({
+          amount,
+          currency,
+          category: toCategoryRef(category),
+          detail: toDetail(detail),
+          occurredAt,
+        }),
       })
 
       if (!response.ok) {
@@ -63,7 +82,8 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       const created = (await response.json()) as Expense
       onCreated?.(created)
       setAmount("")
-      setDescription("")
+      setCategory(null)
+      setDetail("")
       setOccurredAt(todayIsoDate())
       setStatus("idle")
     } catch {
@@ -110,14 +130,31 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-description">Descripción</Label>
+        <Label htmlFor="expense-category">Tipo de gasto</Label>
+        <CategoryCombobox
+          id="expense-category"
+          value={category}
+          onChange={(next) => {
+            setCategory(next)
+            if (next) setErrors((current) => current.filter((message) => message !== MISSING_CATEGORY_MESSAGE))
+          }}
+          invalid={errors.includes(MISSING_CATEGORY_MESSAGE)}
+          inputRef={categoryInputRef}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="expense-detail">
+          Detalle <span className="font-normal text-muted-foreground">(opcional)</span>
+        </Label>
         <Input
-          id="expense-description"
-          name="description"
+          id="expense-detail"
+          name="detail"
           type="text"
-          placeholder="Ej.: Supermercado"
-          value={description}
-          onChange={(event) => setDescription(event.target.value)}
+          maxLength={200}
+          placeholder="Ej.: facturas para el domingo"
+          value={detail}
+          onChange={(event) => setDetail(event.target.value)}
         />
       </div>
 

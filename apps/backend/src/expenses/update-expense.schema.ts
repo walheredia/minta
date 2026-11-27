@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import { categoryRefSchema, detailSchema } from './expense-fields.schema.js';
 
 export const updateExpenseSchema = z.object({
   amount: z.coerce.number().positive('El monto debe ser mayor a 0.').optional(),
   currency: z.enum(['ARS', 'USD']).optional(),
-  description: z.string().min(1, 'La descripción es obligatoria.').optional(),
+  category: categoryRefSchema.optional(),
+  detail: detailSchema.optional(),
   occurredAt: z.coerce.date().optional(),
 });
 

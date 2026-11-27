@@ -1,10 +1,23 @@
 export type Currency = "ARS" | "USD"
 
+export type CategorySource = "SYSTEM" | "HOUSEHOLD"
+
+/** An Expense Category ("Tipo de gasto") as returned by the API. */
+export interface ExpenseCategory {
+  id: string
+  name: string
+  source: CategorySource
+}
+
+/** Reference to the category an Expense is classified under, as sent to the API. */
+export type CategoryRef = Pick<ExpenseCategory, "id" | "source">
+
 export interface Expense {
   id: string
   amount: string
   currency: Currency
-  description: string
+  category: ExpenseCategory
+  detail: string | null
   occurredAt: string
   createdAt: string
   updatedAt: string
@@ -15,8 +28,20 @@ export interface Expense {
 export interface ExpenseInput {
   amount: string
   currency: Currency
-  description: string
+  category: CategoryRef
+  detail: string | null
   occurredAt: string
+}
+
+/** The category reference to send for a picked category. */
+export function toCategoryRef(category: ExpenseCategory): CategoryRef {
+  return { source: category.source, id: category.id }
+}
+
+/** Trims the Detail; blank becomes null. */
+export function toDetail(raw: string): string | null {
+  const trimmed = raw.trim()
+  return trimmed === "" ? null : trimmed
 }
 
 const CURRENCY_FORMATTERS: Record<Currency, Intl.NumberFormat> = {

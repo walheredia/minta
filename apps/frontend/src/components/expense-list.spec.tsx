@@ -1,7 +1,11 @@
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react"
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ExpenseList } from "./expense-list"
-import type { Expense } from "@/lib/expenses"
+import type { Expense, ExpenseCategory } from "@/lib/expenses"
+
+function systemCategory(id: string, name: string): ExpenseCategory {
+  return { id, name, source: "SYSTEM" }
+}
 
 // Totals are scoped to the current month; the fixtures below are all
 // January 2026, so pass that as `referenceDate` instead of relying on the
@@ -13,7 +17,8 @@ const expenses: Expense[] = [
     id: "1",
     amount: "1000",
     currency: "ARS",
-    description: "Supermercado",
+    category: systemCategory("cat_super", "Supermercado"),
+    detail: "Compra del mes",
     occurredAt: "2026-01-20T00:00:00.000Z",
     createdAt: "2026-01-20T00:00:00.000Z",
     updatedAt: "2026-01-20T00:00:00.000Z",
@@ -23,7 +28,8 @@ const expenses: Expense[] = [
     id: "2",
     amount: "500.25",
     currency: "ARS",
-    description: "Transporte",
+    category: systemCategory("cat_sube", "Colectivo/SUBE"),
+    detail: null,
     occurredAt: "2026-01-15T00:00:00.000Z",
     createdAt: "2026-01-15T00:00:00.000Z",
     updatedAt: "2026-01-15T00:00:00.000Z",
@@ -33,7 +39,8 @@ const expenses: Expense[] = [
     id: "3",
     amount: "50",
     currency: "USD",
-    description: "Suscripción",
+    category: systemCategory("cat_netflix", "Netflix"),
+    detail: null,
     occurredAt: "2026-01-10T00:00:00.000Z",
     createdAt: "2026-01-10T00:00:00.000Z",
     updatedAt: "2026-01-10T00:00:00.000Z",
@@ -49,12 +56,23 @@ function noopHandlers() {
 }
 
 describe("ExpenseList", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn())
+  })
+
   it("renders every expense passed in", () => {
     render(<ExpenseList expenses={expenses} {...noopHandlers()} />)
 
     expect(screen.getByText("Supermercado")).toBeInTheDocument()
-    expect(screen.getByText("Transporte")).toBeInTheDocument()
-    expect(screen.getByText("Suscripción")).toBeInTheDocument()
+    expect(screen.getByText("Colectivo/SUBE")).toBeInTheDocument()
+    expect(screen.getByText("Netflix")).toBeInTheDocument()
+  })
+
+  it("shows the category as the row's main text and the Detail beneath it", () => {
+    render(<ExpenseList expenses={expenses} {...noopHandlers()} />)
+
+    const row = screen.getByText("Supermercado").closest("li")!
+    expect(within(row).getByText("Compra del mes")).toBeInTheDocument()
   })
 
   it("shows the ARS and USD totals separately, never combined or converted", () => {
@@ -73,7 +91,8 @@ describe("ExpenseList", () => {
       id: "4",
       amount: "999",
       currency: "ARS",
-      description: "Gasto de otro mes",
+      category: systemCategory("cat_otros", "Gasto de otro mes"),
+      detail: null,
       occurredAt: "2025-12-31T00:00:00.000Z",
       createdAt: "2025-12-31T00:00:00.000Z",
       updatedAt: "2025-12-31T00:00:00.000Z",
@@ -150,27 +169,35 @@ describe("ExpenseList", () => {
       const form = screen.getByRole("form", { name: /editar gasto/i })
       expect(within(form).getByLabelText(/monto/i)).toHaveValue(1000)
       expect(within(form).getByLabelText(/moneda/i)).toHaveValue("ARS")
-      expect(within(form).getByLabelText(/descripción/i)).toHaveValue("Supermercado")
+      expect(within(form).getByLabelText(/tipo de gasto/i)).toHaveValue("Supermercado")
+      expect(within(form).getByLabelText(/detalle/i)).toHaveValue("Compra del mes")
       expect(within(form).getByLabelText(/fecha/i)).toHaveValue("2026-01-20")
     })
 
     it("calls onEdit with the expense id and the updated values on save", async () => {
-      const onEdit = vi.fn().mockResolvedValue({ ...expenses[0], description: "Super actualizado" })
+      const combustible = systemCategory("cat_nafta", "Combustible")
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => [combustible],
+      } as Response)
+      const onEdit = vi.fn().mockResolvedValue({ ...expenses[0], category: combustible, detail: null })
       const onDelete = vi.fn().mockResolvedValue(false)
       render(<ExpenseList expenses={expenses} onEdit={onEdit} onDelete={onDelete} />)
 
       fireEvent.click(screen.getByRole("button", { name: /editar supermercado/i }))
       const form = screen.getByRole("form", { name: /editar gasto/i })
-      fireEvent.change(within(form).getByLabelText(/descripción/i), {
-        target: { value: "Super actualizado" },
-      })
+      fireEvent.change(within(form).getByLabelText(/tipo de gasto/i), { target: { value: "combus" } })
+      fireEvent.click(await screen.findByRole("option", { name: /combustible/i }))
+      fireEvent.change(within(form).getByLabelText(/detalle/i), { target: { value: "   " } })
       fireEvent.click(within(form).getByRole("button", { name: /guardar/i }))
 
       await waitFor(() => {
         expect(onEdit).toHaveBeenCalledWith("1", {
           amount: "1000",
           currency: "ARS",
-          description: "Super actualizado",
+          category: { source: "SYSTEM", id: "cat_nafta" },
+          detail: null,
           occurredAt: "2026-01-20",
         })
       })
@@ -178,6 +205,19 @@ describe("ExpenseList", () => {
       await waitFor(() => {
         expect(screen.queryByRole("form", { name: /editar gasto/i })).not.toBeInTheDocument()
       })
+    })
+
+    it("does not save an edit without a category", async () => {
+      const { onEdit, onDelete } = noopHandlers()
+      render(<ExpenseList expenses={expenses} onEdit={onEdit} onDelete={onDelete} />)
+
+      fireEvent.click(screen.getByRole("button", { name: /editar supermercado/i }))
+      const form = screen.getByRole("form", { name: /editar gasto/i })
+      fireEvent.change(within(form).getByLabelText(/tipo de gasto/i), { target: { value: "" } })
+      fireEvent.click(within(form).getByRole("button", { name: /guardar/i }))
+
+      expect(await within(form).findByRole("alert")).toHaveTextContent("Elegí o creá un tipo de gasto.")
+      expect(onEdit).not.toHaveBeenCalled()
     })
 
     it("exits edit mode without calling onEdit when cancelled", () => {
