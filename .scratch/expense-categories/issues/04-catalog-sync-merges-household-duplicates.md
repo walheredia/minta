@@ -4,8 +4,8 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Sync merges matching Household Categories into the System Category and reassigns their Expenses
-- [ ] Running the sync twice changes nothing the second time
-- [ ] Verified against the real database in the e2e suite
+- [x] Sync merges matching Household Categories into the System Category and reassigns their Expenses
+- [x] Running the sync twice changes nothing the second time
+- [x] Verified against the real database in the e2e suite

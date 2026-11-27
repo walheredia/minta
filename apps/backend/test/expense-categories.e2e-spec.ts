@@ -6,6 +6,7 @@ import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { PrismaService } from './../src/prisma/prisma.service.js';
 import { syncSystemCategories } from './../src/expense-categories/system-categories.sync.js';
+import { SYSTEM_CATEGORY_CATALOG } from './../src/expense-categories/system-categories.catalog.js';
 import { deleteTestUsers } from './cleanup.js';
 
 interface CategoryItem {
@@ -248,6 +249,43 @@ describe('ExpenseCategoriesController (e2e)', () => {
   });
 
   describe('System Category catalog sync', () => {
+    const ADDED_NAME = 'Cerámica e2e';
+
+    afterEach(async () => {
+      // Expenses reference the added System Category, so they go first.
+      await deleteTestUsers(prisma, 'categories-e2e');
+      await prisma.systemExpenseCategory.deleteMany({
+        where: { normalizedKey: 'ceramica e2e' },
+      });
+    });
+
+    it('merges a Household Category into a newly added System Category with the same name', async () => {
+      const agent = await registerAndLogin('categories-e2e-merge@example.com');
+      const created = await agent
+        .post('/api/expenses')
+        .send({
+          amount: 100,
+          currency: 'ARS',
+          category: { source: 'NEW', name: 'ceramica E2E' },
+          occurredAt: '2026-01-10',
+        })
+        .expect(201);
+      expect(created.body.category.source).toBe('HOUSEHOLD');
+
+      await syncSystemCategories(prisma, {
+        ...SYSTEM_CATEGORY_CATALOG,
+        Pruebas: [ADDED_NAME],
+      });
+
+      const [expense] = (await agent.get('/api/expenses').expect(200)).body;
+      expect(expense.category).toEqual({
+        id: expect.any(String),
+        name: ADDED_NAME,
+        source: 'SYSTEM',
+      });
+      expect(await search(agent, 'ceramica e2e')).toEqual([expense.category]);
+    });
+
     it('is idempotent', async () => {
       const before = await prisma.systemExpenseCategory.count();
       await syncSystemCategories(prisma);
