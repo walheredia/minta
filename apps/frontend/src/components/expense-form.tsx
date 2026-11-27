@@ -1,18 +1,20 @@
 "use client"
 
-import { useRef, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { CircleAlert } from "lucide-react"
-import { CategoryCombobox } from "@/components/category-combobox"
+import {
+  ExpenseClassificationFields,
+  useExpenseClassification,
+} from "@/components/expense-classification-fields"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { apiFetch } from "@/lib/api-client"
-import { DETAIL_MAX_LENGTH, MISSING_CATEGORY_MESSAGE, toCategoryRef, toDetail } from "@/lib/expenses"
-import type { CategoryChoice, Currency, Expense } from "@/lib/expenses"
+import { MISSING_CATEGORY_MESSAGE } from "@/lib/expenses"
+import type { Currency, Expense } from "@/lib/expenses"
 
 type Status = "idle" | "submitting"
-
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10)
@@ -39,9 +41,7 @@ interface ExpenseFormProps {
 export function ExpenseForm({ onCreated }: ExpenseFormProps) {
   const [amount, setAmount] = useState("")
   const [currency, setCurrency] = useState<Currency>("ARS")
-  const [category, setCategory] = useState<CategoryChoice | null>(null)
-  const [detail, setDetail] = useState("")
-  const categoryInputRef = useRef<HTMLInputElement>(null)
+  const classification = useExpenseClassification()
   const [occurredAt, setOccurredAt] = useState(todayIsoDate)
   const [errors, setErrors] = useState<string[]>([])
   const [status, setStatus] = useState<Status>("idle")
@@ -49,9 +49,9 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!category) {
+    const classificationPayload = classification.toPayload()
+    if (!classificationPayload) {
       setErrors([MISSING_CATEGORY_MESSAGE])
-      categoryInputRef.current?.focus()
       return
     }
 
@@ -62,13 +62,7 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       const response = await apiFetch("/api/expenses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount,
-          currency,
-          category: toCategoryRef(category),
-          detail: toDetail(detail),
-          occurredAt,
-        }),
+        body: JSON.stringify({ amount, currency, ...classificationPayload, occurredAt }),
       })
 
       if (!response.ok) {
@@ -81,8 +75,7 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
       const created = (await response.json()) as Expense
       onCreated?.(created)
       setAmount("")
-      setCategory(null)
-      setDetail("")
+      classification.reset()
       setOccurredAt(todayIsoDate())
       setStatus("idle")
     } catch {
@@ -128,34 +121,14 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-category">Tipo de gasto</Label>
-        <CategoryCombobox
-          id="expense-category"
-          value={category}
-          onChange={(next) => {
-            setCategory(next)
-            if (next) setErrors((current) => current.filter((message) => message !== MISSING_CATEGORY_MESSAGE))
-          }}
-          invalid={errors.includes(MISSING_CATEGORY_MESSAGE)}
-          inputRef={categoryInputRef}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="expense-detail">
-          Detalle <span className="font-normal text-muted-foreground">(opcional)</span>
-        </Label>
-        <Input
-          id="expense-detail"
-          name="detail"
-          type="text"
-          maxLength={DETAIL_MAX_LENGTH}
-          placeholder="Ej.: facturas para el domingo"
-          value={detail}
-          onChange={(event) => setDetail(event.target.value)}
-        />
-      </div>
+      <ExpenseClassificationFields
+        idPrefix="expense"
+        classification={classification}
+        categoryInvalid={errors.includes(MISSING_CATEGORY_MESSAGE)}
+        onCategoryChosen={() =>
+          setErrors((current) => current.filter((message) => message !== MISSING_CATEGORY_MESSAGE))
+        }
+      />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="expense-occurred-at">Fecha</Label>

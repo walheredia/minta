@@ -32,7 +32,7 @@ To make Household Categories possible before Household invitations exist, every 
 16. As a User, I want categories I create to be available to every member of my Household, so that we classify shared spending the same way.
 17. As a User, I want categories created by other Households to never appear in my searches, so that my Household's vocabulary stays ours and private.
 18. As a User, I want to be unable to assign another Household's category to my Expense, even by crafting a request, so that Household data stays isolated.
-19. As a User, I want to see which suggestions were created in my Household, so that I can tell them apart from the built-in ones.
+19. ~~As a User, I want to see which suggestions were created in my Household, so that I can tell them apart from the built-in ones.~~ Deferred until Household invitations ship (see UI & UX Decisions).
 20. As a User, I want to add an optional Detail to an Expense, so that I can note specifics ("facturas para el domingo") without polluting the category list.
 21. As a User, I want to change an Expense's category and Detail when editing it, using the same search field, so that I can fix misclassifications.
 22. As a User, I want the expense list to show the category as the main text of each row and the Detail underneath, so that I can scan what I spent on at a glance.
@@ -96,7 +96,7 @@ To make Household Categories possible before Household invitations exist, every 
 - It replaces the "Descripción" field in the same position (after Monto/Moneda, before Fecha) and has a visible label "Tipo de gasto". Placeholder example: "Ej.: Panadería".
 - Built from the shadcn/Base UI combobox primitive (style `base-nova`), `h-10`, and keyboard-complete: arrow keys move, Enter selects, Esc closes. It exposes combobox/listbox roles, and the active option is announced.
 - Popover on the `card` surface with a hairline ring and `rounded-lg`. Rows are at least 40px tall on touch. The matched substring is emphasized in semibold.
-- Household Categories show a small muted secondary label ("de tu Hogar"); System Categories show none.
+- Household Categories and System Categories look the same. A "de tu Hogar" label was dropped (follow-up review): while every Household has a single member it would mention a concept the user cannot see. Reintroduce it when Household invitations ship.
 - The last option, separated by a hairline, is "Crear «{typed text}»" with a `Plus` icon. It only appears per the rule above.
 - States:
   - **Under 3 characters:** no popover, plus a muted helper text "Escribí al menos 3 letras".

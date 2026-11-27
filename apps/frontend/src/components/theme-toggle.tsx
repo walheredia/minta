@@ -2,14 +2,20 @@
 
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
-import { useEffect, useState } from "react"
+import { useSyncExternalStore } from "react"
 import { Button } from "@/components/ui/button"
+
+const noopSubscribe = () => () => {}
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => setMounted(true), [])
+  // False during SSR and hydration, true on the client afterwards: the theme
+  // is only known client-side, so the icon renders after hydration.
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  )
 
   if (!mounted) {
     return <Button variant="ghost" size="icon" aria-label="Cambiar tema" />

@@ -8,6 +8,7 @@ import {
   ComboboxInput,
   ComboboxItem,
   ComboboxList,
+  useComboboxAnchor,
 } from "@/components/ui/combobox"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -74,6 +75,7 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
   // The value this component last saw or emitted; a different incoming value
   // means the parent reset or replaced it, so the visible text follows.
   const [syncedValue, setSyncedValue] = useState(value)
+  const anchorRef = useComboboxAnchor()
 
   if (value !== syncedValue) {
     setSyncedValue(value)
@@ -128,6 +130,9 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
   const items: CategoryChoice[] = createOption ? [...results, createOption] : results
   const helperId = `${id}-helper`
   const showHelper = !showingSelection && !searchable
+  // While typing, the helper's line stays reserved so the fields below don't
+  // jump at the third letter; once a category is chosen it collapses.
+  const helperSpace = showHelper ? "visible" : showingSelection ? "collapsed" : "reserved"
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -147,24 +152,27 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
         itemToStringLabel={(choice) => choice.name}
         isItemEqualToValue={sameChoice}
       >
-        <ComboboxInput
-          id={id}
-          ref={inputRef}
-          placeholder="Ej.: Panadería"
-          autoComplete="off"
-          showTrigger={false}
-          showClear={value !== null}
-          clearLabel="Borrar tipo de gasto"
-          aria-invalid={invalid || undefined}
-          aria-describedby={showHelper ? helperId : undefined}
-          className="h-10 shadow-xs dark:shadow-none"
-        />
-        <ComboboxContent className="min-w-(--anchor-width)">
+        <div ref={anchorRef}>
+          <ComboboxInput
+            id={id}
+            ref={inputRef}
+            placeholder="Ej.: Panadería"
+            autoComplete="off"
+            showTrigger={false}
+            showClear={value !== null}
+            clearLabel="Borrar tipo de gasto"
+            aria-invalid={invalid || undefined}
+            aria-describedby={showHelper ? helperId : undefined}
+            className="h-10 shadow-xs dark:shadow-none"
+          />
+        </div>
+        {/* Anchored to the whole field (not the inner <input>) so the popover matches its width. */}
+        <ComboboxContent anchor={anchorRef}>
           {status === "loading" && (
             <div role="status" aria-label="Buscando tipos de gasto" className="flex flex-col gap-1 p-1">
-              {[0, 1, 2].map((row) => (
-                <div key={row} className="flex h-10 items-center px-1.5 pointer-fine:h-8">
-                  <Skeleton className="h-3.5 w-2/3 dark:bg-foreground/10" />
+              {["w-3/5", "w-2/3", "w-2/5"].map((width) => (
+                <div key={width} className="flex h-10 items-center px-1.5 pointer-fine:h-8">
+                  <Skeleton className={cn("h-3.5 dark:bg-foreground/10", width)} />
                 </div>
               ))}
             </div>
@@ -176,7 +184,13 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
                 <CircleAlert aria-hidden className="size-4 shrink-0" />
                 No pudimos cargar los tipos de gasto.
               </span>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setRetryToken((n) => n + 1)}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-foreground"
+                onClick={() => setRetryToken((n) => n + 1)}
+              >
                 Reintentar
               </Button>
             </div>
@@ -211,10 +225,9 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
                   value={choice}
                   className="min-h-10 py-2 pointer-fine:min-h-8 pointer-fine:py-1.5"
                 >
+                  {/* Household Categories carry no source label until Households can have
+                      more than one member: today it would tell the user nothing. */}
                   <HighlightedName name={choice.name} query={query} />
-                  {choice.source === "HOUSEHOLD" && (
-                    <span className="shrink-0 text-xs text-muted-foreground">de tu Hogar</span>
-                  )}
                 </ComboboxItem>
               )
             }
@@ -226,9 +239,13 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
       <p
         id={helperId}
         aria-hidden={!showHelper}
-        className={cn("text-xs text-muted-foreground", !showHelper && "invisible")}
+        className={cn(
+          "text-xs text-muted-foreground",
+          helperSpace === "reserved" && "invisible",
+          helperSpace === "collapsed" && "hidden"
+        )}
       >
-        Escribí al menos 3 letras
+        Escribí al menos {CATEGORY_SEARCH_MIN_LENGTH} letras
       </p>
     </div>
   )

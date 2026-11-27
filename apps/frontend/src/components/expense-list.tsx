@@ -1,24 +1,19 @@
 "use client"
 
-import { useRef, useState, type FormEvent } from "react"
+import { useState, type FormEvent } from "react"
 import { CircleAlert, Pencil, ReceiptText, Trash2 } from "lucide-react"
-import { CategoryCombobox } from "@/components/category-combobox"
+import {
+  ExpenseClassificationFields,
+  useExpenseClassification,
+} from "@/components/expense-classification-fields"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  DETAIL_MAX_LENGTH,
-  MISSING_CATEGORY_MESSAGE,
-  formatAmount,
-  toCategoryRef,
-  toDetail,
-  totalsByCurrency,
-} from "@/lib/expenses"
-import type { CategoryChoice, Currency, Expense, ExpenseInput } from "@/lib/expenses"
-
+import { MISSING_CATEGORY_MESSAGE, formatAmount, totalsByCurrency } from "@/lib/expenses"
+import type { Currency, Expense, ExpenseInput } from "@/lib/expenses"
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -40,16 +35,16 @@ interface EditExpenseFormProps {
   onCancel: () => void
 }
 
-// Inline edit form rendered in place of a list row. Deliberately not shared
-// with `ExpenseForm` (the add form): the two have different lifecycles
-// (pre-filled + save/cancel vs. empty + submit/reset) and sharing would add
-// more indirection than the small amount of duplicated markup is worth.
+// Inline edit form rendered in place of a list row. Only the classification
+// fields are shared with `ExpenseForm` (the add form): the two otherwise have
+// different lifecycles (pre-filled + save/cancel vs. empty + submit/reset).
 function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
   const [amount, setAmount] = useState(expense.amount)
   const [currency, setCurrency] = useState<Currency>(expense.currency)
-  const [category, setCategory] = useState<CategoryChoice | null>(expense.category)
-  const [detail, setDetail] = useState(expense.detail ?? "")
-  const categoryInputRef = useRef<HTMLInputElement>(null)
+  const classification = useExpenseClassification({
+    category: expense.category,
+    detail: expense.detail ?? "",
+  })
   const [occurredAt, setOccurredAt] = useState(toDateInputValue(expense.occurredAt))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -57,9 +52,9 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    if (!category) {
+    const classificationPayload = classification.toPayload()
+    if (!classificationPayload) {
       setError(MISSING_CATEGORY_MESSAGE)
-      categoryInputRef.current?.focus()
       return
     }
 
@@ -67,13 +62,7 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
     setError(null)
 
     try {
-      await onSave({
-        amount,
-        currency,
-        category: toCategoryRef(category),
-        detail: toDetail(detail),
-        occurredAt,
-      })
+      await onSave({ amount, currency, ...classificationPayload, occurredAt })
     } catch {
       setError("No pudimos guardar los cambios. Probá otra vez.")
       setSaving(false)
@@ -114,35 +103,15 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
         </Select>
       </div>
 
-
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`edit-category-${expense.id}`}>Tipo de gasto</Label>
-        <CategoryCombobox
-          id={`edit-category-${expense.id}`}
-          value={category}
-          onChange={(next) => {
-            setCategory(next)
-            if (next && error === MISSING_CATEGORY_MESSAGE) setError(null)
-          }}
-          invalid={error === MISSING_CATEGORY_MESSAGE}
-          inputRef={categoryInputRef}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5 sm:col-span-2">
-        <Label htmlFor={`edit-detail-${expense.id}`}>
-          Detalle <span className="font-normal text-muted-foreground">(opcional)</span>
-        </Label>
-        <Input
-          id={`edit-detail-${expense.id}`}
-          name="detail"
-          type="text"
-          maxLength={DETAIL_MAX_LENGTH}
-          placeholder="Ej.: facturas para el domingo"
-          value={detail}
-          onChange={(event) => setDetail(event.target.value)}
-        />
-      </div>
+      <ExpenseClassificationFields
+        idPrefix={`edit-${expense.id}`}
+        classification={classification}
+        categoryInvalid={error === MISSING_CATEGORY_MESSAGE}
+        onCategoryChosen={() => {
+          if (error === MISSING_CATEGORY_MESSAGE) setError(null)
+        }}
+        detailClassName="sm:col-span-2"
+      />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`edit-occurred-at-${expense.id}`}>Fecha</Label>

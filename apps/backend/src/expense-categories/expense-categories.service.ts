@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import type { Prisma } from '../generated/prisma/client.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import type { CategoryRef } from '../expenses/expense-fields.schema.js';
+import type { CategoryRef } from './category-ref.schema.js';
 import { normalizeCategoryKey } from './category-name.js';
 
 export const SEARCH_MIN_LENGTH = 3;
@@ -28,7 +28,13 @@ interface Candidate extends CategorySuggestion {
   usage: number;
 }
 
-type Db = Prisma.TransactionClient | PrismaService;
+/** Anything that can run Prisma queries: the client itself or an open transaction. */
+type PrismaExecutor = Prisma.TransactionClient | PrismaService;
+
+/** Identifies a category across both tables (ids are only unique per table). */
+function usageKey(source: CategorySource, id: string): string {
+  return `${source}:${id}`;
+}
 
 /** 0 = exact match, 1 = prefix match, 2 = substring-only match. */
 function matchRank(candidateKey: string, key: string): number {
@@ -55,7 +61,7 @@ function compareCandidates(key: string) {
 export class ExpenseCategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private async householdIdFor(db: Db, userId: string): Promise<string> {
+  private async householdIdFor(db: PrismaExecutor, userId: string): Promise<string> {
     const membership = await db.householdMember.findUniqueOrThrow({
       where: { userId },
       select: { householdId: true },
@@ -99,12 +105,12 @@ export class ExpenseCategoriesService {
       ...systemMatches.map((c) => ({
         ...c,
         source: 'SYSTEM' as const,
-        usage: usage.get(`SYSTEM:${c.id}`) ?? 0,
+        usage: usage.get(usageKey('SYSTEM', c.id)) ?? 0,
       })),
       ...householdMatches.map((c) => ({
         ...c,
         source: 'HOUSEHOLD' as const,
-        usage: usage.get(`HOUSEHOLD:${c.id}`) ?? 0,
+        usage: usage.get(usageKey('HOUSEHOLD', c.id)) ?? 0,
       })),
     ];
 
@@ -135,8 +141,8 @@ export class ExpenseCategoriesService {
     const usage = new Map<string, number>();
     for (const row of counts) {
       const key = row.systemCategoryId
-        ? `SYSTEM:${row.systemCategoryId}`
-        : `HOUSEHOLD:${row.householdCategoryId}`;
+        ? usageKey('SYSTEM', row.systemCategoryId)
+        : usageKey('HOUSEHOLD', row.householdCategoryId!);
       usage.set(key, row._count._all);
     }
     return usage;
@@ -150,7 +156,7 @@ export class ExpenseCategoriesService {
    * nothing is revealed about other Households.
    */
   async resolveForExpense(
-    db: Db,
+    db: PrismaExecutor,
     userId: string,
     ref: CategoryRef,
   ): Promise<ExpenseCategoryColumns> {
