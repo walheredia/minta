@@ -9,10 +9,16 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { formatAmount, toCategoryRef, toDetail, totalsByCurrency } from "@/lib/expenses"
+import {
+  DETAIL_MAX_LENGTH,
+  MISSING_CATEGORY_MESSAGE,
+  formatAmount,
+  toCategoryRef,
+  toDetail,
+  totalsByCurrency,
+} from "@/lib/expenses"
 import type { CategoryChoice, Currency, Expense, ExpenseInput } from "@/lib/expenses"
 
-const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
 
 interface ExpenseListProps {
   expenses: Expense[]
@@ -79,7 +85,7 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
       noValidate
       onSubmit={handleSubmit}
       aria-label="Editar gasto"
-      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.5rem_10rem]"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_6.5rem_minmax(0,1.3fr)]"
     >
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`edit-amount-${expense.id}`}>Monto</Label>
@@ -110,17 +116,6 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
 
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={`edit-occurred-at-${expense.id}`}>Fecha</Label>
-        <Input
-          id={`edit-occurred-at-${expense.id}`}
-          name="occurredAt"
-          type="date"
-          value={occurredAt}
-          onChange={(event) => setOccurredAt(event.target.value)}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
         <Label htmlFor={`edit-category-${expense.id}`}>Tipo de gasto</Label>
         <CategoryCombobox
           id={`edit-category-${expense.id}`}
@@ -142,10 +137,21 @@ function EditExpenseForm({ expense, onSave, onCancel }: EditExpenseFormProps) {
           id={`edit-detail-${expense.id}`}
           name="detail"
           type="text"
-          maxLength={200}
+          maxLength={DETAIL_MAX_LENGTH}
           placeholder="Ej.: facturas para el domingo"
           value={detail}
           onChange={(event) => setDetail(event.target.value)}
+        />
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor={`edit-occurred-at-${expense.id}`}>Fecha</Label>
+        <Input
+          id={`edit-occurred-at-${expense.id}`}
+          name="occurredAt"
+          type="date"
+          value={occurredAt}
+          onChange={(event) => setOccurredAt(event.target.value)}
         />
       </div>
 

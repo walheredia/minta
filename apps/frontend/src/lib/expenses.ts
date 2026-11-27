@@ -1,5 +1,11 @@
 export type Currency = "ARS" | "USD"
 
+/** Shown when an Expense is saved without an Expense Category. */
+export const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
+
+/** Maximum length of an Expense's Detail (mirrors the backend). */
+export const DETAIL_MAX_LENGTH = 200
+
 export type CategorySource = "SYSTEM" | "HOUSEHOLD"
 
 /** An Expense Category ("Tipo de gasto") as returned by the API. */

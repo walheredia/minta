@@ -241,9 +241,21 @@ describe('ExpenseCategoriesController (e2e)', () => {
 
       await createExpense(agent, { source: 'SYSTEM', id: canina.id });
 
-      expect((await search(agent, 'peluqueria')).map((c) => c.name)).toEqual([
+      expect((await search(agent, 'peluq')).map((c) => c.name)).toEqual([
         'Peluquería canina',
         'Peluquería',
+      ]);
+    });
+
+    it('always lists the exact match first, so an existing name is never offered for creation', async () => {
+      const agent = await registerAndLogin('categories-e2e-exact@example.com');
+      const [, canina] = await search(agent, 'peluqueria');
+
+      await createExpense(agent, { source: 'SYSTEM', id: canina.id });
+
+      expect((await search(agent, 'PELUQUERIA')).map((c) => c.name)).toEqual([
+        'Peluquería',
+        'Peluquería canina',
       ]);
     });
   });

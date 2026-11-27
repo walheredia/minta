@@ -169,7 +169,7 @@ describe("ExpenseList", () => {
       const form = screen.getByRole("form", { name: /editar gasto/i })
       expect(within(form).getByLabelText(/monto/i)).toHaveValue(1000)
       expect(within(form).getByLabelText(/moneda/i)).toHaveValue("ARS")
-      expect(within(form).getByLabelText(/tipo de gasto/i)).toHaveValue("Supermercado")
+      expect(within(form).getByLabelText("Tipo de gasto")).toHaveValue("Supermercado")
       expect(within(form).getByLabelText(/detalle/i)).toHaveValue("Compra del mes")
       expect(within(form).getByLabelText(/fecha/i)).toHaveValue("2026-01-20")
     })
@@ -187,7 +187,7 @@ describe("ExpenseList", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /editar supermercado/i }))
       const form = screen.getByRole("form", { name: /editar gasto/i })
-      fireEvent.change(within(form).getByLabelText(/tipo de gasto/i), { target: { value: "combus" } })
+      fireEvent.change(within(form).getByLabelText("Tipo de gasto"), { target: { value: "combus" } })
       fireEvent.click(await screen.findByRole("option", { name: /combustible/i }))
       fireEvent.change(within(form).getByLabelText(/detalle/i), { target: { value: "   " } })
       fireEvent.click(within(form).getByRole("button", { name: /guardar/i }))
@@ -213,7 +213,7 @@ describe("ExpenseList", () => {
 
       fireEvent.click(screen.getByRole("button", { name: /editar supermercado/i }))
       const form = screen.getByRole("form", { name: /editar gasto/i })
-      fireEvent.change(within(form).getByLabelText(/tipo de gasto/i), { target: { value: "" } })
+      fireEvent.change(within(form).getByLabelText("Tipo de gasto"), { target: { value: "" } })
       fireEvent.click(within(form).getByRole("button", { name: /guardar/i }))
 
       expect(await within(form).findByRole("alert")).toHaveTextContent("Elegí o creá un tipo de gasto.")

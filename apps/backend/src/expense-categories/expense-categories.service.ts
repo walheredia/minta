@@ -30,12 +30,16 @@ interface Candidate extends CategorySuggestion {
 
 type Db = Prisma.TransactionClient | PrismaService;
 
+/** 0 = exact match, 1 = prefix match, 2 = substring-only match. */
+function matchRank(candidateKey: string, key: string): number {
+  if (candidateKey === key) return 0;
+  return candidateKey.startsWith(key) ? 1 : 2;
+}
+
 function compareCandidates(key: string) {
   return (a: Candidate, b: Candidate) => {
-    const aPrefix = a.normalizedKey.startsWith(key) ? 0 : 1;
-    const bPrefix = b.normalizedKey.startsWith(key) ? 0 : 1;
     return (
-      aPrefix - bPrefix ||
+      matchRank(a.normalizedKey, key) - matchRank(b.normalizedKey, key) ||
       b.usage - a.usage ||
       a.normalizedKey.localeCompare(b.normalizedKey, 'es-AR')
     );
@@ -61,8 +65,9 @@ export class ExpenseCategoriesService {
 
   /**
    * Search-as-you-type over the Expense Categories visible to the User:
-   * substring match on the normalized key; prefix matches first, then the
-   * ones the Household uses most, then alphabetical; capped at
+   * substring match on the normalized key; the exact match first (so the
+   * client never offers to create an existing name), then prefix matches,
+   * then the ones the Household uses most, then alphabetical; capped at
    * {@link SEARCH_MAX_RESULTS}.
    */
   async search(userId: string, query: string): Promise<CategorySuggestion[]> {

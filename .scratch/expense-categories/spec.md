@@ -71,7 +71,7 @@ To make Household Categories possible before Household invitations exist, every 
 
 **API** (all routes authenticated and scoped server-side to the requesting User's Household)
 - `GET /api/expense-categories?q=<text>` returns up to 8 items `{ id, name, source: "SYSTEM" | "HOUSEHOLD" }`. If `q` is shorter than 3 characters after trimming, it returns `200 []`. Matching is substring over the normalized key. Ordering:
-  1. prefix matches before substring-only matches;
+  1. the exact normalized match first (so the client never offers to create an existing name), then prefix matches, then substring-only matches;
   2. then by how many Expenses of the User's Household members use the category, descending;
   3. then alphabetically.
 - `POST /api/expenses` and `PATCH /api/expenses/:id` replace `description` with:

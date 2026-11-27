@@ -27,7 +27,7 @@ const created: Expense = {
 
 /** Types into "Tipo de gasto" and picks the suggestion served by the (mocked) search. */
 async function pickCategory(text: string, name: RegExp) {
-  fireEvent.change(screen.getByLabelText(/tipo de gasto/i), { target: { value: text } })
+  fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: text } })
   fireEvent.click(await screen.findByRole("option", { name }))
 }
 
@@ -72,7 +72,7 @@ describe("ExpenseForm", () => {
       })
     )
 
-    expect(screen.getByLabelText(/tipo de gasto/i)).toHaveValue("")
+    expect(screen.getByLabelText("Tipo de gasto")).toHaveValue("")
     expect(screen.getByLabelText(/detalle/i)).toHaveValue("")
   })
 
@@ -83,7 +83,7 @@ describe("ExpenseForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /cargar gasto/i }))
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Elegí o creá un tipo de gasto.")
-    expect(screen.getByLabelText(/tipo de gasto/i)).toHaveFocus()
+    expect(screen.getByLabelText("Tipo de gasto")).toHaveFocus()
     expect(expensePosts()).toHaveLength(0)
   })
 

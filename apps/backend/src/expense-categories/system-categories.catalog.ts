@@ -1,7 +1,7 @@
 /**
  * The System Category catalog: predefined Expense Categories available to
- * every Household, grouped by rubro. The rubro is stored but not yet shown in
- * the UI. Applied to the database by `syncSystemCategories` (Prisma seed).
+ * every Household, grouped by spending area. The group is stored but not yet
+ * shown in the UI. Applied to the database by `syncSystemCategories` (Prisma seed).
  *
  * Every name must have a distinct normalized key; the sync fails otherwise.
  */

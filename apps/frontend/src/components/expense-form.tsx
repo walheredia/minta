@@ -8,12 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { apiFetch } from "@/lib/api-client"
-import { toCategoryRef, toDetail } from "@/lib/expenses"
+import { DETAIL_MAX_LENGTH, MISSING_CATEGORY_MESSAGE, toCategoryRef, toDetail } from "@/lib/expenses"
 import type { CategoryChoice, Currency, Expense } from "@/lib/expenses"
 
 type Status = "idle" | "submitting"
 
-const MISSING_CATEGORY_MESSAGE = "Elegí o creá un tipo de gasto."
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10)
@@ -151,7 +150,7 @@ export function ExpenseForm({ onCreated }: ExpenseFormProps) {
           id="expense-detail"
           name="detail"
           type="text"
-          maxLength={200}
+          maxLength={DETAIL_MAX_LENGTH}
           placeholder="Ej.: facturas para el domingo"
           value={detail}
           onChange={(event) => setDetail(event.target.value)}

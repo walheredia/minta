@@ -36,12 +36,19 @@ function ComboboxTrigger({
   )
 }
 
-function ComboboxClear({ className, ...props }: ComboboxPrimitive.Clear.Props) {
+// Icon-only: always labelled, and its hit area grows to ≥40px on touch
+// without changing its visual size (DESIGN.md "Controls").
+function ComboboxClear({
+  className,
+  "aria-label": ariaLabel = "Borrar",
+  ...props
+}: ComboboxPrimitive.Clear.Props) {
   return (
     <ComboboxPrimitive.Clear
       data-slot="combobox-clear"
       render={<InputGroupButton variant="ghost" size="icon-xs" />}
-      className={cn(className)}
+      aria-label={ariaLabel}
+      className={cn("relative pointer-coarse:after:absolute pointer-coarse:after:-inset-2.5", className)}
       {...props}
     >
       <XIcon className="pointer-events-none" />
@@ -55,10 +62,13 @@ function ComboboxInput({
   disabled = false,
   showTrigger = true,
   showClear = false,
+  clearLabel,
   ...props
 }: ComboboxPrimitive.Input.Props & {
   showTrigger?: boolean
   showClear?: boolean
+  /** Accessible name of the clear (×) button. */
+  clearLabel?: string
 }) {
   return (
     <InputGroup className={cn("w-auto", className)}>
@@ -77,7 +87,7 @@ function ComboboxInput({
             disabled={disabled}
           />
         )}
-        {showClear && <ComboboxClear disabled={disabled} />}
+        {showClear && <ComboboxClear disabled={disabled} aria-label={clearLabel} />}
       </InputGroupAddon>
       {children}
     </InputGroup>

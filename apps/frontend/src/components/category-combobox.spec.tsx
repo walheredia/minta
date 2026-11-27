@@ -149,4 +149,17 @@ describe("CategoryCombobox", () => {
 
     expect(await screen.findByRole("option", { name: "Crear «Ceramica»" })).toBeInTheDocument()
   })
+
+  it("lets the user clear the chosen category with a labelled button", async () => {
+    vi.mocked(fetch).mockResolvedValue(jsonResponse(200, [panaderia]))
+    const onChange = vi.fn()
+    render(<Harness onChange={onChange} />)
+
+    fireEvent.change(screen.getByLabelText("Tipo de gasto"), { target: { value: "pana" } })
+    fireEvent.click(await screen.findByRole("option", { name: /panadería/i }))
+    fireEvent.click(screen.getByRole("button", { name: "Borrar tipo de gasto" }))
+
+    expect(onChange).toHaveBeenLastCalledWith(null)
+    expect(screen.getByLabelText("Tipo de gasto")).toHaveValue("")
+  })
 })

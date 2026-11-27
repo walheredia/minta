@@ -31,10 +31,13 @@ export const categoryRefSchema = z.discriminatedUnion(
 
 export type CategoryRef = z.infer<typeof categoryRefSchema>;
 
+/** Maximum length of an Expense's Detail; mirrors `Expense.detail VarChar(200)`. */
+export const DETAIL_MAX_LENGTH = 200;
+
 /** Optional free-text Detail; blank becomes null. */
 export const detailSchema = z
   .string()
   .trim()
-  .max(200, 'El detalle no puede superar los 200 caracteres.')
+  .max(DETAIL_MAX_LENGTH, `El detalle no puede superar los ${DETAIL_MAX_LENGTH} caracteres.`)
   .transform((value) => (value === '' ? null : value))
   .nullable();

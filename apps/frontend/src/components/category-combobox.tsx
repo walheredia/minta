@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { apiFetch } from "@/lib/api-client"
+import { cn } from "@/lib/utils"
 import {
   CATEGORY_NAME_MAX_LENGTH,
   CATEGORY_SEARCH_MIN_LENGTH,
@@ -126,6 +127,7 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
     settled && !tooLong && !hasEquivalent ? { source: "NEW", name: newName } : null
   const items: CategoryChoice[] = createOption ? [...results, createOption] : results
   const helperId = `${id}-helper`
+  const showHelper = !showingSelection && !searchable
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -152,8 +154,9 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
           autoComplete="off"
           showTrigger={false}
           showClear={value !== null}
+          clearLabel="Borrar tipo de gasto"
           aria-invalid={invalid || undefined}
-          aria-describedby={helperId}
+          aria-describedby={showHelper ? helperId : undefined}
           className="h-10 shadow-xs dark:shadow-none"
         />
         <ComboboxContent className="min-w-(--anchor-width)">
@@ -161,7 +164,7 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
             <div role="status" aria-label="Buscando tipos de gasto" className="flex flex-col gap-1 p-1">
               {[0, 1, 2].map((row) => (
                 <div key={row} className="flex h-10 items-center px-1.5 pointer-fine:h-8">
-                  <Skeleton className="h-3.5 w-2/3" />
+                  <Skeleton className="h-3.5 w-2/3 dark:bg-foreground/10" />
                 </div>
               ))}
             </div>
@@ -219,11 +222,14 @@ export function CategoryCombobox({ id, value, onChange, invalid = false, inputRe
         </ComboboxContent>
       </Combobox>
 
-      {!showingSelection && !searchable && (
-        <p id={helperId} className="text-xs text-muted-foreground">
-          Escribí al menos 3 letras
-        </p>
-      )}
+      {/* The line is always reserved so fields below don't jump when it hides. */}
+      <p
+        id={helperId}
+        aria-hidden={!showHelper}
+        className={cn("text-xs text-muted-foreground", !showHelper && "invisible")}
+      >
+        Escribí al menos 3 letras
+      </p>
     </div>
   )
 }
