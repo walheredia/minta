@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Registering a User creates a Household with that User as its only member, in the same transaction
-- [ ] Household name is "Hogar de {name}" or "Mi Hogar" when no name was given
-- [ ] Migration backfills a Household for every existing User without one
-- [ ] A User cannot belong to more than one Household (enforced in the database)
-- [ ] Covered by e2e tests at the HTTP boundary (register → household exists)
+- [x] Registering a User creates a Household with that User as its only member, in the same transaction
+- [x] Household name is "Hogar de {name}" or "Mi Hogar" when no name was given
+- [x] Migration backfills a Household for every existing User without one
+- [x] A User cannot belong to more than one Household (enforced in the database)
+- [x] Covered by e2e tests at the HTTP boundary (register → household exists)

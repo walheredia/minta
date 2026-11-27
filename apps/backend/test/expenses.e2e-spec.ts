@@ -5,6 +5,7 @@ import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { AppModule } from './../src/app.module.js';
 import { PrismaService } from './../src/prisma/prisma.service.js';
+import { deleteTestUsers } from './cleanup.js';
 
 describe('ExpensesController (e2e)', () => {
   let app: INestApplication<App>;
@@ -24,9 +25,7 @@ describe('ExpensesController (e2e)', () => {
   });
 
   afterEach(async () => {
-    await prisma.expense.deleteMany({ where: { user: { email: { contains: 'expenses-e2e' } } } });
-    await prisma.refreshToken.deleteMany({ where: { user: { email: { contains: 'expenses-e2e' } } } });
-    await prisma.user.deleteMany({ where: { email: { contains: 'expenses-e2e' } } });
+    await deleteTestUsers(prisma, 'expenses-e2e');
     await app.close();
   });
 
